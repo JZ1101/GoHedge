@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
-contract YieldForwardInsurance is AutomationCompatibleInterface, ReentrancyGuard, Pausable, Ownable {
+contract YieldForwardInsurance is AutomationCompatibleInterface, ReentrancyGuard, Pausable, Ownable (msg.sender) {
     enum ContractState { Created, Active, Triggered, Expired, Cancelled }
     
     struct InsuranceContract {
