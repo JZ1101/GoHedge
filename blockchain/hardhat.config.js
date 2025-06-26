@@ -1,16 +1,41 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
-// Default dummy private key for local development
-const DUMMY_PRIVATE_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
-
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.19",
+  solidity: {
+    version: "0.8.19",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
   networks: {
     fuji: {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 43113,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [DUMMY_PRIVATE_KEY]
+      gasPrice: 25000000000, // 25 nAVAX
+      gas: 8000000
+    },
+    mainnet: {
+      url: "https://api.avax.network/ext/bc/C/rpc",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 43114,
+      gasPrice: 25000000000
     }
+  },
+  etherscan: {
+    apiKey: {
+      avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY || "ABC123ABC123ABC123ABC123ABC123ABC1"
+    }
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
   }
 };

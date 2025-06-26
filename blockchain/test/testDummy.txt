@@ -1,0 +1,133 @@
+DUMMY INSURANCE CONTRACT - COMPREHENSIVE TEST SUITE
+
+=== SETUP ===
+- User1: Contract creator/seller
+- User2: Insurance buyer
+- User3: Additional test user
+- Initial balances: All users start with 10 AVAX
+
+=== TEST CASE 1: CONTRACT CREATION ===
+
+Step 1: User1 creates contract #1
+- Function: createContract("AVAX", 10000000000000000000, now, now+7days, "AVAX", 1000000000000000000, 100000000000000000)
+- Parameters: trigger_price=10 AVAX, reserve=1 AVAX, fee=0.1 AVAX
+- User1 sends: 1 AVAX (reserve amount)
+- Expected: Contract #1 created, User1 balance = 9 AVAX
+- Verify: contractCounter = 1
+
+Step 2: User1 creates contract #2  
+- Function: createContract("AVAX", 5000000000000000000, now, now+7days, "AVAX", 2000000000000000000, 200000000000000000)
+- Parameters: trigger_price=5 AVAX, reserve=2 AVAX, fee=0.2 AVAX
+- User1 sends: 2 AVAX (reserve amount)
+- Expected: Contract #2 created, User1 balance = 7 AVAX
+- Verify: contractCounter = 2
+
+=== TEST CASE 2: INSURANCE PURCHASE ===
+
+Step 3: User2 buys contract #1
+- Function: purchaseInsurance(1)
+- User2 sends: 0.1 AVAX (insurance fee)
+- Expected: User1 immediately receives 0.1 AVAX, User2 balance = 9.9 AVAX, User1 balance = 7.1 AVAX
+- Verify: contracts[1].buyer = User2, contracts[1].active = true
+
+Step 4: User2 buys contract #2
+- Function: purchaseInsurance(2)
+- User2 sends: 0.2 AVAX (insurance fee)
+- Expected: User1 immediately receives 0.2 AVAX, User2 balance = 9.7 AVAX, User1 balance = 7.3 AVAX
+- Verify: contracts[2].buyer = User2, contracts[2].active = true
+
+=== TEST CASE 3: PAYOUT TRIGGERING ===
+
+Step 5: Trigger contract #1 (price drops below threshold)
+- Function: triggerPayout(1, 8000000000000000000)
+- Current price: 8 AVAX (below 10 AVAX trigger)
+- Expected: Contract #1 triggered
+- Verify: contracts[1].triggered = true
+
+Step 6: User2 claims payout from contract #1
+- Function: claimPayout(1)
+- Expected: User2 receives 1 AVAX payout, User2 balance = 10.7 AVAX
+- Verify: contracts[1].claimed = true
+
+Step 7: Contract #2 remains untriggered
+- Current price stays at 6 AVAX (above 5 AVAX trigger)
+- Expected: contracts[2].triggered = false
+
+=== TEST CASE 4: CONTRACT EXPIRATION ===
+
+Step 8: Fast forward time (7 days pass)
+- Both contracts expire
+- Expected: block.timestamp > endDate for both contracts
+
+Step 9: User1 withdraws reserve from untriggered contract #2
+- Function: withdrawReserve(2)
+- Expected: User1 receives 2 AVAX back, User1 balance = 9.3 AVAX
+- Verify: Transaction succeeds
+
+Step 10: User1 attempts to withdraw from triggered contract #1
+- Function: withdrawReserve(1)
+- Expected: Transaction fails with "Cannot withdraw reserve - contract was triggered"
+
+=== TEST CASE 5: ERROR CONDITIONS ===
+
+Step 11: User3 tries to buy expired contract
+- Function: purchaseInsurance(1)
+- Expected: Fails with "Contract has expired"
+
+Step 12: User2 tries to claim untriggered contract
+- Function: claimPayout(2)
+- Expected: Fails with "Payout not triggered yet"
+
+Step 13: Attempt to trigger with insufficient price drop
+- Function: triggerPayout(2, 12000000000000000000)
+- Price: 12 AVAX (above 5 AVAX trigger)
+- Expected: Fails with "Price condition not met - current price too high"
+
+Step 14: Double claim attempt
+- Function: claimPayout(1) (second time)
+- Expected: Fails with "Payout already claimed"
+
+Step 15: Non-buyer tries to claim
+- User3 calls: claimPayout(1)
+- Expected: Fails with "Only buyer can claim payout"
+
+=== TEST CASE 6: VIEW FUNCTIONS ===
+
+Step 16: Get all contracts
+- Function: getAllContracts()
+- Expected: Returns [1, 2]
+
+Step 17: Get User1's contracts (as seller)
+- Function: getContractsByUser(User1)
+- Expected: Returns [1, 2]
+
+Step 18: Get User2's contracts (as buyer)
+- Function: getContractsByUser(User2)
+- Expected: Returns [1, 2]
+
+Step 19: Get contract #1 details
+- Function: getContract(1)
+- Expected: seller=User1, buyer=User2, triggered=true, claimed=true, active=true
+
+Step 20: Get contract #2 details
+- Function: getContract(2)
+- Expected: seller=User1, buyer=User2, triggered=false, claimed=false, active=true
+
+Step 21: Check contract balance
+- Function: getContractBalance()
+- Expected: 0 AVAX (all funds distributed)
+
+=== FINAL VERIFICATION ===
+
+Expected Final Balances:
+- User1: 9.3 AVAX (started 10, deposited 3, received 0.3 fees, got back 2 reserve)
+- User2: 10.7 AVAX (started 10, paid 0.3 fees, received 1 payout)
+- User3: 10 AVAX (unchanged)
+- Contract: 0 AVAX
+
+Expected Contract States:
+- Contract #1: active=true, triggered=true, claimed=true
+- Contract #2: active=true, triggered=false, claimed=false, reserve withdrawn
+
+=== SUCCESS CRITERIA ===
+All 21 test steps pass without errors and final balances/states match
