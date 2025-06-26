@@ -467,10 +467,77 @@ describe("DummyInsurance", function () {
             const user1BalanceAfterFinal = await ethers.provider.getBalance(user1.address);
             const expectedBalance36 = user1BalanceBeforeFinal + pointOneEther - gasUsed36;
             expect(user1BalanceAfterFinal).to.equal(expectedBalance36);
-            console.log("✓ User1 withdrew 0.1 AVAX reserve from expired contract #5");
+            console.log("✓ User1 withdrew 0.1 AVAX reserve from non-triggered expired contract #5");
+
+            console.log("\n=== TEST CASE 10: UNPURCHASED CONTRACT TEST ===");
+
+            // Step 37: Create contract #6 that no one will buy
+            console.log("Step 37: Create contract #6 (unpurchased contract test)");
+            const currentBlock2 = await ethers.provider.getBlock('latest');
+            const currentTime2 = currentBlock2.timestamp;
+            const shortEndTime2 = currentTime2 + 60; // 1 minute expiration
+
+            const tx37 = await dummyInsurance.connect(user1).createContract(
+                "AVAX",
+                ethers.parseEther("40"), // High trigger price (won't trigger)
+                currentTime2,
+                shortEndTime2,
+                "AVAX",
+                ethers.parseEther("0.3"), // 0.3 AVAX reserve
+                ethers.parseEther("0.03"), // 0.03 AVAX fee
+                { value: ethers.parseEther("0.3") }
+            );
+            await tx37.wait();
+
+            expect(await dummyInsurance.contractCounter()).to.equal(6);
+            console.log("✓ Contract #6 created (no buyer will purchase this)");
+
+            // Verify contract #6 state (should be inactive - no buyer)
+            const contract6Initial = await dummyInsurance.getContract(6);
+            expect(contract6Initial.active).to.be.false;
+            expect(contract6Initial.buyer).to.equal(ethers.ZeroAddress);
+            console.log("✓ Contract #6 state verified: active=false, buyer=0x0");
+
+            await pause(2);
+
+            // Step 38: Fast forward time to expire contract #6
+            console.log("Step 38: Fast forward time to expire contract #6 (no buyer)");
+            await ethers.provider.send("evm_increaseTime", [120]); // 2 minutes
+            await ethers.provider.send("evm_mine");
+            console.log("✓ Contract #6 expired without any buyer");
+
+            await pause(1);
+
+            // Step 39: User1 withdraws reserve from unpurchased expired contract #6
+            console.log("Step 39: User1 withdraws reserve from unpurchased expired contract #6");
+            const user1BalanceBeforeUnpurchased = await ethers.provider.getBalance(user1.address);
+
+            const tx39 = await dummyInsurance.connect(user1).withdrawReserve(6);
+            const receipt39 = await tx39.wait();
+            const gasUsed39 = receipt39.gasUsed * receipt39.gasPrice;
+
+            const user1BalanceAfterUnpurchased = await ethers.provider.getBalance(user1.address);
+            const expectedBalance39 = user1BalanceBeforeUnpurchased + ethers.parseEther("0.3") - gasUsed39;
+            expect(user1BalanceAfterUnpurchased).to.equal(expectedBalance39);
+            console.log("✓ User1 withdrew 0.3 AVAX reserve from unpurchased expired contract #6");
+
+            // Step 40: Verify final contract #6 state
+            console.log("Step 40: Verify final contract #6 state after withdrawal");
+            const contract6Final = await dummyInsurance.getContract(6);
+            expect(contract6Final.active).to.be.false;
+            expect(contract6Final.triggered).to.be.false;
+            expect(contract6Final.claimed).to.be.false;
+            expect(contract6Final.buyer).to.equal(ethers.ZeroAddress);
+            console.log("✓ Contract #6 final state: unpurchased, untriggered, unclaimed");
+
+            console.log("\n=== SELLER PROTECTION VERIFICATION ===");
+            console.log("✓ Unpurchased contract test completed successfully");
+            console.log("✓ Seller protection confirmed: full reserve recovery from unsold contracts");
+            console.log("✓ Only gas fees lost when no buyers participate");
 
             console.log("\n=== FINAL VERIFICATION ===");
-            console.log("✅ All 36 test steps completed successfully!");
+            console.log("✅ All 40 test steps completed successfully!");
+            console.log("✅ Unpurchased contract protection verified!");
         });
     });
 });

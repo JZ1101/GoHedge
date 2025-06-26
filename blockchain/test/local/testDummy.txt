@@ -167,13 +167,13 @@ Step 25: Non-buyer tries to claim contract #4
 - User2 calls: claimPayout(4) (User3 is the buyer)
 - Expected: Transaction fails with "Only buyer can claim payout"
 
-Step 26: Attempt to withdraw reserve from triggered contract
-- Function: withdrawReserve(1) (contract was triggered)
-- Expected: Transaction fails with "Cannot withdraw reserve - contract was triggered"
-
-Step 27: Fast forward time to expire remaining contracts
+Step 26: Fast forward time to expire remaining contracts
 - Action: Advance blockchain time by 7 days + 1 hour
 - Expected: Contracts #1, #2, #4 are now expired
+
+Step 27: Attempt to withdraw reserve from triggered contract
+- Function: withdrawReserve(1) (contract was triggered)
+- Expected: Transaction fails with "Cannot withdraw reserve - contract was triggered"
 
 Step 28: Create expired contract and test purchase
 - Function: createContract("AVAX", 10000000000000000000, now-1000, now-500, "AVAX", 100000000000000000, 10000000000000000)
@@ -216,9 +216,38 @@ Step 35: User3 claims payout from contract #4
 - Expected: User3 receives 0.8 AVAX payout
 - Verify: contracts[4].claimed = true
 
-Step 36: User1 attempts to withdraw from non-triggered expired contracts
-- Function: withdrawReserve(5) (if not triggered and expired)
-- Expected: User1 receives remaining reserve back
+Step 36: User1 withdraws from non-triggered expired contract #5
+- Function: withdrawReserve(5)
+- Expected: User1 receives 0.1 AVAX reserve back
+- Verify: Transaction succeeds
+
+=== TEST CASE 10: UNPURCHASED CONTRACT TEST ===
+
+Step 37: Create contract #6 (unpurchased contract test)
+- Function: createContract("AVAX", 40000000000000000000, now, now+60seconds, "AVAX", 300000000000000000, 30000000000000000)
+- Parameters: trigger_price=40 AVAX, reserve=0.3 AVAX, fee=0.03 AVAX, expires in 60 seconds
+- User1 sends: 0.3 AVAX (reserve amount)
+- Expected: Contract #6 created
+- Verify: contractCounter = 6, contracts[6].active = false, contracts[6].buyer = 0x0
+
+Step 38: Fast forward time to expire contract #6 (no buyer)
+- Action: Advance blockchain time by 120 seconds
+- Expected: Contract #6 expires without any buyer
+- Verify: block.timestamp > contracts[6].endDate
+
+Step 39: User1 withdraws reserve from unpurchased expired contract #6
+- Function: withdrawReserve(6)
+- Expected: User1 receives full 0.3 AVAX reserve back
+- Verify: Transaction succeeds
+
+Step 40: Verify final contract #6 state after withdrawal
+- Expected: contracts[6].active = false, triggered = false, claimed = false, buyer = 0x0
+- Verify: Unpurchased contract protection works correctly
+
+=== SELLER PROTECTION VERIFICATION ===
+- Unpurchased contract test completed successfully
+- Seller protection confirmed: full reserve recovery from unsold contracts
+- Only gas fees lost when no buyers participate
 
 === TEST MODE PRICE SETTINGS DETAIL ===
 
@@ -252,6 +281,7 @@ Expected Final States:
 - Contract #3: active=true, triggered=false, claimed=false (expired)
 - Contract #4: active=true, triggered=true, claimed=true
 - Contract #5: active=false, triggered=false, claimed=false (expired, never purchased)
+- Contract #6: active=false, triggered=false, claimed=false (unpurchased, expired)
 
 Expected Final Balances:
 - User1: Received all fees, paid out triggered reserves, got back untriggered reserves
@@ -259,7 +289,7 @@ Expected Final Balances:
 - User3: Paid fees for contracts #3,#4, received payout from #4, lost fee on expired #3
 
 === SUCCESS CRITERIA ===
-All 36 test steps pass without errors and demonstrate:
+All 40 test steps pass without errors and demonstrate:
 ✅ Price-based triggering (successful and failed attempts)
 ✅ Time-based expiration (before and after triggering)
 ✅ Multiple user interactions
@@ -267,3 +297,4 @@ All 36 test steps pass without errors and demonstrate:
 ✅ Test mode price manipulation
 ✅ Error condition handling
 ✅ State verification throughout
+✅ Seller protection for unpurchased contracts
