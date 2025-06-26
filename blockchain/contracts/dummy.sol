@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol"; // Updated path
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /**
  * @title DummyInsurance
  * @dev A simplified insurance contract for testing and development
@@ -15,7 +20,7 @@ pragma solidity ^0.8.19;
  * NOTE: This is a dummy contract for testing purposes.
  * It uses manual price input instead of oracles for simplicity.
  */
-contract DummyInsurance {
+contract DummyInsurance is AutomationCompatibleInterface, ReentrancyGuard, Ownable {
     /**
      * @dev Structure to store insurance contract details
      */
@@ -39,6 +44,10 @@ contract DummyInsurance {
     
     /// @dev Counter for generating unique contract IDs
     uint256 public contractCounter;
+    
+    AggregatorV3Interface internal priceFeed;
+    bool public testMode = true;
+    uint256 public testPrice = 25 * 10**8; // $25 for testing
     
     /**
      * @dev Emitted when a new insurance contract is created
@@ -169,7 +178,6 @@ contract DummyInsurance {
     /**
      * @dev Manually trigger payout if conditions are met
      * @param _contractId ID of the contract to trigger
-     * @param _currentPrice Current price of the trigger token (in wei)
      * 
      * NOTE: In a real contract, this would use price oracles like Chainlink.
      * Here we manually input the price for testing purposes.
@@ -183,18 +191,37 @@ contract DummyInsurance {
      * Example: Trigger payout if AVAX price drops to $19
      * triggerPayout(1, 19000000000000000000) // 19 * 10^18
      */
-    function triggerPayout(uint256 _contractId, uint256 _currentPrice) external {
+    function triggerPayout(uint256 _contractId) public {
         Contract storage c = contracts[_contractId];
         require(c.active, "Contract not active - needs buyer first");
         require(!c.triggered, "Payout already triggered");
-        require(_currentPrice <= c.triggerPrice, "Price condition not met - current price too high");
         require(block.timestamp < c.endDate, "Contract has expired");
+        
+        uint256 currentPrice = getCurrentPrice();
+        require(currentPrice <= c.triggerPrice, "Price condition not met - current price too high");
         
         c.triggered = true;
         
-        emit PayoutTriggered(_contractId, _currentPrice);
+        emit PayoutTriggered(_contractId, currentPrice);
     }
-    
+
+    /**
+     * @dev Internal function to trigger payout (used by automation)
+     * @param _contractId ID of the contract to trigger
+     */
+    function _triggerPayout(uint256 _contractId) internal {
+        Contract storage c = contracts[_contractId];
+        if (c.active && !c.triggered && 
+            block.timestamp < c.endDate) {
+            
+            uint256 currentPrice = getCurrentPrice();
+            if (currentPrice <= c.triggerPrice) {
+                c.triggered = true;
+                emit PayoutTriggered(_contractId, currentPrice);
+            }
+        }
+    }
+
     /**
      * @dev Claim payout after trigger conditions are met
      * @param _contractId ID of the contract to claim from
@@ -345,5 +372,89 @@ contract DummyInsurance {
      */
     function getContractBalance() external view returns (uint256) {
         return address(this).balance;
+    }
+    
+    /**
+     * @dev Returns the latest price from the Chainlink price feed
+     * @return The latest price in wei
+     */
+    function getCurrentPrice() public view returns (uint256) {
+        if (testMode) {
+            return testPrice;
+        }
+        
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        return uint256(price);
+    }
+    
+    /**
+     * @dev Check upkeep conditions for Chainlink Automation
+     * @return upkeepNeeded True if upkeep is needed, false otherwise
+     * @return performData Encoded data for performing upkeep
+     */
+    function checkUpkeep(bytes calldata /* checkData */) 
+        external view override 
+        returns (bool upkeepNeeded, bytes memory performData) 
+    {
+        uint256[] memory triggerableContracts = new uint256[](contractCounter);
+        uint256 count = 0;
+        uint256 currentPrice = getCurrentPrice();
+        
+        for (uint256 i = 1; i <= contractCounter; i++) {
+            Contract storage c = contracts[i];
+            if (c.active && !c.triggered && 
+                block.timestamp < c.endDate && 
+                currentPrice <= c.triggerPrice) {
+                triggerableContracts[count] = i;
+                count++;
+            }
+        }
+        
+        upkeepNeeded = count > 0;
+        performData = abi.encode(triggerableContracts, count);
+    }
+    
+    /**
+     * @dev Perform upkeep actions for Chainlink Automation
+     * @param performData Encoded data from checkUpkeep
+     */
+    function performUpkeep(bytes calldata performData) external override {
+        (uint256[] memory contractIds, uint256 count) = abi.decode(performData, (uint256[], uint256));
+        
+        for (uint256 i = 0; i < count; i++) {
+            uint256 contractId = contractIds[i];
+            if (contractId > 0) {
+                _triggerPayout(contractId); // Use internal function
+            }
+        }
+    }
+    
+    /**
+     * @dev Set the test price for manual triggering (owner only)
+     * @param _price New test price in USD (scaled by 10^8)
+     * 
+     * Requirements:
+     * - Must be in test mode
+     */
+    function setTestPrice(uint256 _price) external onlyOwner {
+        require(testMode, "Not in test mode");
+        testPrice = _price;
+    }
+    
+    /**
+     * @dev Enable production mode (owner only)
+     * 
+     * Requirements:
+     * - Price feed address must be set (not zero)
+     */
+    function enableProductionMode() external onlyOwner {
+        require(address(priceFeed) != address(0), "Price feed not set");
+        testMode = false;
+    }
+
+    constructor(address _priceFeed) {
+        if (_priceFeed != address(0)) {
+            priceFeed = AggregatorV3Interface(_priceFeed);
+        }
     }
 }
