@@ -1,0 +1,302 @@
+DUMMY INSURANCE CONTRACT - COMPREHENSIVE TEST SUITE
+
+=== SETUP ===
+- User1: Contract creator/seller
+- User2: Insurance buyer
+- User3: Additional test user
+- Initial balances: All users start with 10 AVAX
+- Contract deployed in TEST MODE with default test price of $25 (25 * 10^8)
+
+=== TEST CASE 1: CONTRACT CREATION ===
+
+Step 1: User1 creates contract #1 (High trigger price - should trigger)
+- Function: createContract("AVAX", 30000000000000000000, now, now+7days, "AVAX", 1000000000000000000, 100000000000000000)
+- Parameters: trigger_price=30 AVAX, reserve=1 AVAX, fee=0.1 AVAX
+- User1 sends: 1 AVAX (reserve amount)
+- Expected: Contract #1 created, User1 balance = 9 AVAX
+- Verify: contractCounter = 1
+
+Step 2: User1 creates contract #2 (Low trigger price - should NOT trigger)
+- Function: createContract("AVAX", 20000000000000000000, now, now+7days, "AVAX", 2000000000000000000, 200000000000000000)
+- Parameters: trigger_price=20 AVAX, reserve=2 AVAX, fee=0.2 AVAX
+- User1 sends: 2 AVAX (reserve amount)
+- Expected: Contract #2 created, User1 balance = 7 AVAX
+- Verify: contractCounter = 2
+
+Step 3: User1 creates contract #3 (Short expiration for testing)
+- Function: createContract("AVAX", 35000000000000000000, now, now+60seconds, "AVAX", 500000000000000000, 50000000000000000)
+- Parameters: trigger_price=35 AVAX, reserve=0.5 AVAX, fee=0.05 AVAX, expires in 60 seconds
+- User1 sends: 0.5 AVAX (reserve amount)
+- Expected: Contract #3 created, User1 balance = 6.5 AVAX
+- Verify: contractCounter = 3
+
+=== TEST CASE 2: INSURANCE PURCHASE ===
+
+Step 4: User2 buys contract #1
+- Function: purchaseInsurance(1)
+- User2 sends: 0.1 AVAX (insurance fee)
+- Expected: User1 immediately receives 0.1 AVAX, User2 balance = 9.9 AVAX, User1 balance = 6.6 AVAX
+- Verify: contracts[1].buyer = User2, contracts[1].active = true
+
+Step 5: User2 buys contract #2
+- Function: purchaseInsurance(2)
+- User2 sends: 0.2 AVAX (insurance fee)
+- Expected: User1 immediately receives 0.2 AVAX, User2 balance = 9.7 AVAX, User1 balance = 6.8 AVAX
+- Verify: contracts[2].buyer = User2, contracts[2].active = true
+
+Step 6: User3 buys contract #3
+- Function: purchaseInsurance(3)
+- User3 sends: 0.05 AVAX (insurance fee)
+- Expected: User1 immediately receives 0.05 AVAX, User3 balance = 9.95 AVAX, User1 balance = 6.85 AVAX
+- Verify: contracts[3].buyer = User3, contracts[3].active = true
+
+=== TEST CASE 3: PRICE TRIGGERING SCENARIOS ===
+
+Step 7: Set test price to trigger contract #1 (price drops below 30 AVAX)
+- Function: setTestPrice(25000000000000000000) // 25 AVAX
+- Current test price: 25 AVAX (below 30 AVAX trigger for contract #1)
+- Expected: Test price updated to 25 AVAX
+- Verify: testPrice = 25 * 10^18, getCurrentPrice() = 25 * 10^18
+
+Step 8: Trigger contract #1 (should succeed - price condition met)
+- Function: triggerPayout(1)
+- Current price: 25 AVAX (below 30 AVAX trigger)
+- Expected: Contract #1 triggered successfully
+- Verify: contracts[1].triggered = true
+
+Step 9: Attempt to trigger contract #2 (should fail - price condition not met)
+- Function: triggerPayout(2)
+- Current price: 25 AVAX (above 20 AVAX trigger for contract #2)
+- Expected: Transaction fails with "Price condition not met - current price too high"
+- Verify: contracts[2].triggered = false
+
+Step 10: Set test price to trigger contract #2 (price drops below 20 AVAX)
+- Function: setTestPrice(18000000000000000000) // 18 AVAX
+- Current test price: 18 AVAX (below 20 AVAX trigger for contract #2)
+- Expected: Test price updated to 18 AVAX
+- Verify: testPrice = 18 * 10^18, getCurrentPrice() = 18 * 10^18
+
+Step 11: Trigger contract #2 (should succeed - price condition now met)
+- Function: triggerPayout(2)
+- Current price: 18 AVAX (below 20 AVAX trigger)
+- Expected: Contract #2 triggered successfully
+- Verify: contracts[2].triggered = true
+
+=== TEST CASE 4: PAYOUT CLAIMS ===
+
+Step 12: User2 claims payout from triggered contract #1
+- Function: claimPayout(1)
+- Expected: User2 receives 1 AVAX payout, User2 balance = 10.7 AVAX
+- Verify: contracts[1].claimed = true
+
+Step 13: User2 claims payout from triggered contract #2
+- Function: claimPayout(2)
+- Expected: User2 receives 2 AVAX payout, User2 balance = 12.7 AVAX
+- Verify: contracts[2].claimed = true
+
+=== TEST CASE 5: EXPIRATION TESTING ===
+
+Step 14: Set test price to trigger contract #3 (price drops below 35 AVAX)
+- Function: setTestPrice(32000000000000000000) // 32 AVAX
+- Current test price: 32 AVAX (below 35 AVAX trigger for contract #3)
+- Expected: Test price updated to 32 AVAX
+- Verify: testPrice = 32 * 10^18
+
+Step 15: Fast forward time to expire contract #3 (before triggering)
+- Action: Advance blockchain time by 120 seconds
+- Expected: Contract #3 expires before it can be triggered
+- Verify: block.timestamp > contracts[3].endDate
+
+Step 16: Attempt to trigger expired contract #3 (should fail - expired)
+- Function: triggerPayout(3)
+- Current price: 32 AVAX (below 35 AVAX trigger, but contract expired)
+- Expected: Transaction fails with "Contract has expired"
+- Verify: contracts[3].triggered = false
+
+Step 17: User1 withdraws reserve from expired untriggered contract #3
+- Function: withdrawReserve(3)
+- Expected: User1 receives 0.5 AVAX back, User1 balance = 7.35 AVAX
+- Verify: Transaction succeeds
+
+=== TEST CASE 6: PRICE CONDITION TESTING ===
+
+Step 18: Create contract #4 for additional price testing
+- Function: createContract("AVAX", 15000000000000000000, now, now+7days, "AVAX", 800000000000000000, 80000000000000000)
+- Parameters: trigger_price=15 AVAX, reserve=0.8 AVAX, fee=0.08 AVAX
+- User1 sends: 0.8 AVAX (reserve amount)
+- Expected: Contract #4 created
+- Verify: contractCounter = 4
+
+Step 19: User3 buys contract #4
+- Function: purchaseInsurance(4)
+- User3 sends: 0.08 AVAX (insurance fee)
+- Expected: User1 immediately receives 0.08 AVAX, User3 balance = 9.87 AVAX
+- Verify: contracts[4].buyer = User3, contracts[4].active = true
+
+Step 20: Set test price above trigger (should not trigger)
+- Function: setTestPrice(16000000000000000000) // 16 AVAX
+- Current test price: 16 AVAX (above 15 AVAX trigger for contract #4)
+- Expected: Test price updated to 16 AVAX
+- Verify: testPrice = 16 * 10^18
+
+Step 21: Attempt to trigger contract #4 (should fail - price too high)
+- Function: triggerPayout(4)
+- Current price: 16 AVAX (above 15 AVAX trigger)
+- Expected: Transaction fails with "Price condition not met - current price too high"
+- Verify: contracts[4].triggered = false
+
+Step 22: Set test price below trigger (should trigger)
+- Function: setTestPrice(14000000000000000000) // 14 AVAX
+- Current test price: 14 AVAX (below 15 AVAX trigger for contract #4)
+- Expected: Test price updated to 14 AVAX
+- Verify: testPrice = 14 * 10^18
+
+Step 23: Trigger contract #4 (should succeed)
+- Function: triggerPayout(4)
+- Current price: 14 AVAX (below 15 AVAX trigger)
+- Expected: Contract #4 triggered successfully
+- Verify: contracts[4].triggered = true
+
+=== TEST CASE 7: ERROR CONDITIONS (UPDATED) ===
+
+Step 24: Double claim attempt on contract #1
+- Function: claimPayout(1) (second time)
+- Expected: Transaction fails with "Payout already claimed"
+
+Step 25: Non-buyer (User2) helps claim contract #4 for User3 (the buyer/beneficiary)
+- User2 calls: claimPayout(4) (User3 is the buyer/beneficiary)
+- Expected: Transaction succeeds - User3 receives 0.8 AVAX payout, User2 pays gas
+- Verify: contracts[4].claimed = true, User3 balance increases by 0.8 AVAX
+- Note: Anyone can trigger the claim, but payout goes to the beneficiary (User3)
+
+Step 26: Fast forward time to expire remaining contracts
+- Action: Advance blockchain time by 7 days + 1 hour
+- Expected: Contracts #1, #2, #4 are now expired
+
+Step 27: Attempt to withdraw reserve from triggered contract
+- Function: withdrawReserve(1) (contract was triggered)
+- Expected: Transaction fails with "Cannot withdraw reserve - contract was triggered"
+
+Step 28: Create expired contract and test purchase
+- Function: createContract("AVAX", 10000000000000000000, now-1000, now-500, "AVAX", 100000000000000000, 10000000000000000)
+- Parameters: Already expired timestamps
+- Expected: Contract #5 created but already expired
+
+Step 29: Attempt to purchase expired contract
+- Function: purchaseInsurance(5)
+- Expected: Transaction fails with "Contract has expired"
+
+=== TEST CASE 8: VIEW FUNCTIONS ===
+
+Step 30: Get all contracts
+- Function: getAllContracts()
+- Expected: Returns [1, 2, 3, 4, 5]
+
+Step 31: Get User1's contracts (as seller)
+- Function: getContractsByUser(User1)
+- Expected: Returns [1, 2, 3, 4, 5]
+
+Step 32: Get User2's contracts (as buyer)
+- Function: getContractsByUser(User2)
+- Expected: Returns [1, 2]
+
+Step 33: Get User3's contracts (as buyer)
+- Function: getContractsByUser(User3)
+- Expected: Returns [3, 4]
+
+Step 34: Verify contract states
+- Contract #1: triggered=true, claimed=true (User2 claimed)
+- Contract #2: triggered=true, claimed=true (User2 claimed)
+- Contract #3: triggered=false, claimed=false (expired before trigger)
+- Contract #4: triggered=true, claimed=true (User2 helped User3 claim in Step 25)
+- Contract #5: triggered=false, claimed=false (expired, never purchased)
+
+=== TEST CASE 9: FINAL CLAIMS AND CLEANUP ===
+
+Step 35: Verify contract #4 double claim prevention
+- Function: claimPayout(4) (attempt to claim already claimed contract)
+- Expected: Transaction fails with "Payout already claimed"
+- Note: Contract #4 was already claimed in Step 25 when User2 helped User3
+
+Step 36: User1 withdraws from non-triggered expired contract #5
+- Function: withdrawReserve(5)
+- Expected: User1 receives 0.1 AVAX reserve back
+- Verify: Transaction succeeds
+
+=== TEST CASE 10: UNPURCHASED CONTRACT TEST ===
+
+Step 37: Create contract #6 (unpurchased contract test)
+- Function: createContract("AVAX", 40000000000000000000, now, now+60seconds, "AVAX", 300000000000000000, 30000000000000000)
+- Parameters: trigger_price=40 AVAX, reserve=0.3 AVAX, fee=0.03 AVAX, expires in 60 seconds
+- User1 sends: 0.3 AVAX (reserve amount)
+- Expected: Contract #6 created
+- Verify: contractCounter = 6, contracts[6].active = false, contracts[6].buyer = 0x0
+
+Step 38: Fast forward time to expire contract #6 (no buyer)
+- Action: Advance blockchain time by 120 seconds
+- Expected: Contract #6 expires without any buyer
+- Verify: block.timestamp > contracts[6].endDate
+
+Step 39: User1 withdraws reserve from unpurchased expired contract #6
+- Function: withdrawReserve(6)
+- Expected: User1 receives full 0.3 AVAX reserve back
+- Verify: Transaction succeeds
+
+Step 40: Verify final contract #6 state after withdrawal
+- Expected: contracts[6].active = false, triggered = false, claimed = false, buyer = 0x0
+- Verify: Unpurchased contract protection works correctly
+
+=== SELLER PROTECTION VERIFICATION ===
+- Unpurchased contract test completed successfully
+- Seller protection confirmed: full reserve recovery from unsold contracts
+- Only gas fees lost when no buyers participate
+
+=== TEST MODE PRICE SETTINGS DETAIL ===
+
+Price Setting Functions:
+1. setTestPrice(uint256 _price) - Owner only, test mode only
+   - Input: Price in wei (e.g., 25000000000000000000 for 25 AVAX)
+   - Updates: testPrice variable
+   - Affects: getCurrentPrice() return value
+
+2. getCurrentPrice() - Public view
+   - Test Mode: Returns testPrice value
+   - Production Mode: Returns Chainlink price feed data
+
+3. enableProductionMode() - Owner only
+   - Switches from test mode to production mode
+   - Requires price feed to be set
+
+Test Price Scenarios Used:
+- Default: 25 AVAX (25 * 10^18)
+- Scenario 1: 25 AVAX (triggers contract #1 with 30 AVAX trigger)
+- Scenario 2: 18 AVAX (triggers contract #2 with 20 AVAX trigger)
+- Scenario 3: 32 AVAX (would trigger contract #3 with 35 AVAX trigger, but expired)
+- Scenario 4: 16 AVAX (above contract #4 with 15 AVAX trigger - no trigger)
+- Scenario 5: 14 AVAX (below contract #4 with 15 AVAX trigger - triggers)
+
+=== FINAL VERIFICATION ===
+
+Expected Final States:
+- Contract #1: active=true, triggered=true, claimed=true
+- Contract #2: active=true, triggered=true, claimed=true
+- Contract #3: active=true, triggered=false, claimed=false (expired)
+- Contract #4: active=true, triggered=true, claimed=true
+- Contract #5: active=false, triggered=false, claimed=false (expired, never purchased)
+- Contract #6: active=false, triggered=false, claimed=false (unpurchased, expired)
+
+Expected Final Balances:
+- User1: Received all fees, paid out triggered reserves, got back untriggered reserves
+- User2: Paid fees for contracts #1,#2, received payouts from both
+- User3: Paid fees for contracts #3,#4, received payout from #4, lost fee on expired #3
+
+=== SUCCESS CRITERIA ===
+All 40 test steps pass without errors and demonstrate:
+✅ Price-based triggering (successful and failed attempts)
+✅ Time-based expiration (before and after triggering)
+✅ Multiple user interactions
+✅ Complete contract lifecycle
+✅ Test mode price manipulation
+✅ Error condition handling
+✅ State verification throughout
+✅ Seller protection for unpurchased contracts

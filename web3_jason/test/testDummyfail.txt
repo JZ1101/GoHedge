@@ -1,0 +1,316 @@
+=== DUMMY INSURANCE CONTRACT TEST FAILURE ANALYSIS ===
+
+This document contains common test failures, their causes, and solutions for the DummyInsurance contract.
+
+=== COMPILATION ERRORS ===
+
+1. ERROR: "Stack too deep" during compilation
+   CAUSE: Too many local variables in functions (especially getContract)
+   SOLUTION: 
+   - Enable viaIR in hardhat.config.js: viaIR: true
+   - Enable optimizer: optimizer: { enabled: true, runs: 200 }
+   - Consider splitting large functions
+
+2. ERROR: "File @openzeppelin/contracts/security/ReentrancyGuard.sol not found"
+   CAUSE: OpenZeppelin v5 changed import paths
+   SOLUTION: 
+   - Use: @openzeppelin/contracts/utils/ReentrancyGuard.sol
+   - Or downgrade: npm install @openzeppelin/contracts@^4.9.0
+
+3. ERROR: "Wrong argument count for modifier invocation: Ownable"
+   CAUSE: OpenZeppelin v4 vs v5 constructor differences
+   SOLUTION:
+   - v4: constructor() { }
+   - v5: constructor() Ownable(msg.sender) { }
+
+=== DEPLOYMENT ERRORS ===
+
+4. ERROR: Contract deployment fails with "insufficient funds"
+   CAUSE: Not enough ETH/AVAX in deployer account
+   SOLUTION: Check account balance and fund appropriately
+
+5. ERROR: "Cannot find module 'dotenv'"
+   CAUSE: Missing environment variable package
+   SOLUTION: npm install dotenv
+
+6. ERROR: "Invalid account for network: fuji"
+   CAUSE: Missing private keys in .env file
+   SOLUTION: Create .env file with DEPLOYER_PRIVATE_KEY and BUYER_PRIVATE_KEY
+
+=== SPECIFIC TEST EXECUTION ERRORS ===
+
+7. ERROR: "AssertionError: Error in 'PayoutTriggered' event: Expected arguments array to have length 1, but it has 2"
+   LOCATION: test\DummyInsurancefail.test.js:307:13
+   CAUSE: PayoutTriggered event emits 2 arguments (contractId, currentPrice) but test expects 1
+   SOLUTION: Update test expectation:
+   ```javascript
+   await expect(dummyInsurance.connect(owner).triggerPayout(1))
+       .to.emit(dummyInsurance, "PayoutTriggered")
+       .withArgs(1, 25 * 10**8); // contractId and currentPrice
+   ```
+
+8. ERROR: "The given contract doesn't have a custom error named 'OwnableUnauthorizedAccount'"
+   LOCATION: test\DummyInsurancefail.test.js:432:21
+   CAUSE: Using OpenZeppelin v5 error format with v4 contract
+   SOLUTION: Use v4 error format:
+   ```javascript
+   .to.be.revertedWith("Ownable: caller is not the owner");
+   ```
+
+9. ERROR: "TypeError: dummyInsurance.connect(...).setTestMode is not a function"
+   LOCATION: test\DummyInsurancefail.test.js:437:47
+   CAUSE: setTestMode function doesn't exist in contract
+   SOLUTION: Add function to contract or remove test:
+   ```solidity
+   function setTestMode(bool _testMode) external onlyOwner {
+       testMode = _testMode;
+   }
+   ```
+
+=== COMMON TEST PATTERNS AND FIXES ===
+
+10. PATTERN: Testing contract creation
+    ```javascript
+    await dummyInsurance.connect(seller).createContract(
+        TRIGGER_TOKEN,
+        TRIGGER_PRICE,
+        START_DATE,
+        END_DATE,
+        RESERVE_TOKEN,
+        RESERVE_AMOUNT,
+        INSURANCE_FEE,
+        { value: RESERVE_AMOUNT } // CRITICAL: Must send AVAX >= reserveAmount
+    );
+    ```
+
+11. PATTERN: Testing contract purchase
+    ```javascript
+    await dummyInsurance.connect(buyer).purchaseInsurance(1, {
+        value: INSURANCE_FEE // CRITICAL: Must pay fee >= insuranceFee
+    });
+    ```
+
+12. PATTERN: Testing beneficiary change (buyer only, after purchase, before trigger)
+    ```javascript
+    // 1. Create contract
+    // 2. Purchase contract  
+    // 3. Change beneficiary
+    await dummyInsurance.connect(buyer).changeBeneficiary(1, newBeneficiary.address);
+    ```
+
+13. PATTERN: Testing fee receiver change (seller only, before purchase)
+    ```javascript
+    // 1. Create contract
+    // 2. Change fee receiver (must be before purchase)
+    await dummyInsurance.connect(seller).changeFeeReceiver(1, newFeeReceiver.address);
+    ```
+
+14. PATTERN: Testing complete payout flow
+    ```javascript
+    // 1. Create contract
+    // 2. Purchase contract
+    // 3. Trigger payout (owner only)
+    await dummyInsurance.connect(owner).triggerPayout(1);
+    // 4. Claim payout (beneficiary only)
+    await dummyInsurance.connect(beneficiary).claimPayout(1);
+    ```
+
+=== CONTRACT INTERACTION ERRORS ===
+
+15. ERROR: "Contract does not exist"
+    CAUSE: Using contract ID 0 or non-existent ID
+    SOLUTION: Contracts start at ID 1, ensure valid contract exists
+
+16. ERROR: "Must send enough AVAX for reserve"
+    CAUSE: msg.value < reserveAmount in createContract
+    SOLUTION: Send value >= reserveAmount when creating
+
+17. ERROR: "Must pay full insurance fee"
+    CAUSE: msg.value < insuranceFee in purchaseInsurance
+    SOLUTION: Send value >= insuranceFee when purchasing
+
+18. ERROR: "Only buyer can change beneficiary"
+    CAUSE: Wrong account calling changeBeneficiary or contract not purchased
+    SOLUTION: Ensure buyer account calls this after purchasing
+
+19. ERROR: "Cannot change fee receiver after purchase"
+    CAUSE: Trying to change fee receiver on active/purchased contract
+    SOLUTION: Change fee receiver before contract purchase
+
+20. ERROR: "Payout not triggered yet"
+    CAUSE: Calling claimPayout before triggerPayout
+    SOLUTION: Call triggerPayout first (owner only)
+
+21. ERROR: "Payout already claimed"
+    CAUSE: Attempting to claim payout twice
+    SOLUTION: Check claimed status before claiming
+
+22. ERROR: "Invalid beneficiary address" / "Invalid fee receiver address"
+    CAUSE: Using ethers.ZeroAddress
+    SOLUTION: Use valid non-zero address
+
+=== EVENT TESTING PATTERNS ===
+
+23. SUCCESSFUL EVENT PATTERN:
+    ```javascript
+    await expect(transaction)
+        .to.emit(contract, "EventName")
+        .withArgs(param1, param2, param3);
+    ```
+
+24. COMMON EVENT ERRORS:
+    - Wrong event name (case sensitive)
+    - Wrong number of arguments
+    - Wrong argument types or values
+    - Event not emitted at all
+
+=== ACCESS CONTROL TESTING ===
+
+25. OWNER-ONLY FUNCTIONS:
+    - triggerPayout(contractId)
+    - setTestPrice(price)
+    - setTestMode(bool) [if implemented]
+    - onlyOwner modifier checks
+
+26. BUYER-ONLY FUNCTIONS:
+    - changeBeneficiary(contractId, newBeneficiary)
+    - Must be called after purchase, before trigger
+
+27. SELLER-ONLY FUNCTIONS:
+    - changeFeeReceiver(contractId, newFeeReceiver)
+    - Must be called before purchase
+
+28. BENEFICIARY-ONLY FUNCTIONS:
+    - claimPayout(contractId)
+    - Must be called after trigger, only once
+
+=== BALANCE AND PAYMENT TESTING ===
+
+29. BALANCE CHECK PATTERNS:
+    ```javascript
+    const initialBalance = await ethers.provider.getBalance(address);
+    // Perform transaction
+    const finalBalance = await ethers.provider.getBalance(address);
+    expect(finalBalance).to.be.gt(initialBalance); // Account for gas costs
+    ```
+
+30. VALUE REQUIREMENTS:
+    - createContract: msg.value >= reserveAmount
+    - purchaseInsurance: msg.value >= insuranceFee
+    - Other functions: no value required
+
+=== TEST DATA PATTERNS ===
+
+31. STANDARD TEST VALUES:
+    ```javascript
+    const TRIGGER_TOKEN = "AVAX";
+    const TRIGGER_PRICE = ethers.parseEther("25");
+    const RESERVE_TOKEN = "AVAX";
+    const RESERVE_AMOUNT = ethers.parseEther("1");
+    const INSURANCE_FEE = ethers.parseEther("0.1");
+    const START_DATE = Math.floor(Date.now() / 1000);
+    const END_DATE = START_DATE + (30 * 24 * 60 * 60);
+    ```
+
+32. ACCOUNT MANAGEMENT:
+    ```javascript
+    let owner, seller, buyer, newBeneficiary, newFeeReceiver;
+    [owner, seller, buyer, newBeneficiary, newFeeReceiver] = await ethers.getSigners();
+    ```
+
+=== VIEW FUNCTION TESTING ===
+
+33. getContract() FUNCTION:
+    - Returns 14 values in specific order
+    - Check all struct fields match expected values
+    - Test with valid and invalid contract IDs
+
+34. getAllContracts() FUNCTION:
+    - Returns array of contract IDs (1, 2, 3, ...)
+    - Length should match contractCounter
+    - Test with 0, 1, and multiple contracts
+
+35. getContractsByUser() FUNCTION:
+    - Returns contracts where user is seller OR buyer
+    - Test with different user addresses
+    - Test with users who have no contracts
+
+36. getContractBalance() FUNCTION:
+    - Returns total AVAX held by contract
+    - Should equal sum of all reserve amounts
+    - Updates after contract creation and claims
+
+=== DEBUGGING COMMANDS ===
+
+37. Run specific failing test:
+    npx hardhat test test/DummyInsurancefail.test.js --grep "Should allow owner to trigger payout manually"
+
+38. Run with detailed output:
+    npx hardhat test --verbose
+
+39. Run with gas reporting:
+    REPORT_GAS=true npx hardhat test
+
+40. Clean and recompile:
+    npx hardhat clean && npx hardhat compile
+
+41. Check contract deployment:
+    npx hardhat console --network localhost
+
+=== ENVIRONMENT SETUP CHECKLIST ===
+
+42. Required packages installed:
+    ✓ @nomicfoundation/hardhat-toolbox
+    ✓ @openzeppelin/contracts (v4.x for this project)
+    ✓ @chainlink/contracts
+    ✓ dotenv
+    ✓ chai
+    ✓ ethers
+
+43. Hardhat config requirements:
+    ✓ viaIR: true (for stack depth issues)
+    ✓ optimizer enabled with runs: 200
+    ✓ Correct Solidity version (0.8.19)
+    ✓ Network configuration if deploying
+
+44. Test file requirements:
+    ✓ Proper imports (chai, hardhat, ethers)
+    ✓ beforeEach setup with fresh contract deployment
+    ✓ Proper account management
+    ✓ Correct test data constants
+
+=== TROUBLESHOOTING WORKFLOW ===
+
+When tests fail, check in order:
+1. ✓ Contract compiles without errors
+2. ✓ All dependencies installed correctly
+3. ✓ Hardhat config has viaIR: true
+4. ✓ Test setup in beforeEach runs successfully
+5. ✓ Using correct account for each operation
+6. ✓ Sending proper value with payable functions
+7. ✓ Event names and parameters match exactly
+8. ✓ Error messages match OpenZeppelin version
+9. ✓ Function exists in contract before testing
+10. ✓ Test sequence follows contract logic flow
+
+=== PERFORMANCE OPTIMIZATION ===
+
+45. Reduce test execution time:
+    - Use beforeEach efficiently for common setup
+    - Avoid unnecessary contract redeployments
+    - Group related tests in describe blocks
+    - Use snapshot/restore for complex setups
+
+46. Memory optimization:
+    - Clean up large variables after use
+    - Use appropriate data types in tests
+    - Monitor gas usage with reporting
+
+=== END OF FAILURE ANALYSIS ===
+
+For additional help, check:
+- Hardhat documentation: https://hardhat.org/
+- OpenZeppelin documentation: https://docs.openzeppelin.com/
+- Chainlink documentation: https://docs.chain.link/
+- Ethers.js documentation: https://docs.ethers.org/
+- Chai assertion library: https://www.chaijs.com/
