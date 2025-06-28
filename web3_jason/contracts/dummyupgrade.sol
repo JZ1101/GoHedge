@@ -2,22 +2,21 @@
 pragma solidity ^0.8.19;
 
 import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title DummyUpgrade - Real-time Automated Insurance Contract
- * @dev Enhanced insurance contract with Chainlink Automation for real-time monitoring
+ * @title DummyUpgrade - Time-Based Automated Insurance Contract
+ * @dev Enhanced insurance contract with Chainlink Time-based Automation only
  * 
  * Features:
  * - Real-time price monitoring via Chainlink Price Feeds
- * - Automated payout execution via Chainlink Automation
+ * - Time-based automated payout execution via Chainlink Time-based Upkeep
  * - Multiple trigger conditions support
- * - Gas-optimized automation checks
+ * - Gas-optimized time-based automation checks
  * - Emergency controls and safety mechanisms
  */
-contract DummyUpgrade is AutomationCompatibleInterface, ReentrancyGuard, Ownable {
+contract DummyUpgrade is ReentrancyGuard, Ownable {
     /**
      * @dev Enhanced structure for insurance contracts
      */
@@ -57,10 +56,10 @@ contract DummyUpgrade is AutomationCompatibleInterface, ReentrancyGuard, Ownable
     bool public testMode = true;
     mapping(string => uint256) public testPrices;
     
-    /// @dev Automation configuration
+    /// @dev Time-based automation configuration
     bool public automationEnabled = true;
     uint256 public lastGlobalCheck;
-    uint256 public automationInterval = 60; // Minimum seconds between checks
+    uint256 public automationInterval = 3600; // Time interval in seconds (1 hour default)
     
     /**
      * @dev Enhanced events for real-time monitoring
@@ -109,7 +108,14 @@ contract DummyUpgrade is AutomationCompatibleInterface, ReentrancyGuard, Ownable
     event AutomationConfigChanged(
         bool enabled,
         uint256 gasLimit,
-        uint256 maxContractsPerCheck
+        uint256 maxContractsPerCheck,
+        uint256 timeInterval
+    );
+
+    event ReserveWithdrawn(
+        uint256 indexed contractId,
+        address indexed seller,
+        uint256 amount
     );
 
     /**
@@ -221,79 +227,8 @@ contract DummyUpgrade is AutomationCompatibleInterface, ReentrancyGuard, Ownable
         
         (, int256 price, , uint256 updatedAt, ) = feed.latestRoundData();
         require(price > 0, "Invalid price data");
-        //require(block.timestamp - updatedAt < 3600, "Price data too old"); // 1 hour max
         
         return uint256(price);
-    }
-
-    /**
-     * @dev Enhanced automation check with gas optimization
-     */
-    function checkUpkeep(bytes calldata /* checkData */) 
-        external view override 
-        returns (bool upkeepNeeded, bytes memory performData) 
-    {
-        if (!automationEnabled) {
-            return (false, "");
-        }
-        
-        // Rate limiting
-        if (block.timestamp < lastGlobalCheck + automationInterval) {
-            return (false, "");
-        }
-        
-        uint256[] memory triggerableContracts = new uint256[](maxContractsPerCheck);
-        uint256 count = 0;
-        uint256 checked = 0;
-        
-        for (uint256 i = 1; i <= contractCounter && checked < maxContractsPerCheck; i++) {
-            Contract storage c = contracts[i];
-            
-            // Skip if not eligible for checking
-            if (!c.active || c.triggered || block.timestamp >= c.endDate) {
-                continue;
-            }
-            
-            checked++;
-            
-            try this.getCurrentPrice(c.triggerToken) returns (uint256 currentPrice) {
-                if (currentPrice <= c.triggerPrice) {
-                    triggerableContracts[count] = i;
-                    count++;
-                }
-            } catch {
-                // Skip contracts with price feed issues
-                continue;
-            }
-        }
-        
-        upkeepNeeded = count > 0;
-        performData = abi.encode(triggerableContracts, count, block.timestamp);
-    }
-
-    /**
-     * @dev Enhanced automation execution with error handling
-     */
-    function performUpkeep(bytes calldata performData) external override {
-        require(automationEnabled, "Automation disabled");
-        
-        (uint256[] memory contractIds, uint256 count, uint256 checkTime) = 
-            abi.decode(performData, (uint256[], uint256, uint256));
-        
-        uint256 gasStart = gasleft();
-        uint256 successfulTriggers = 0;
-        
-        lastGlobalCheck = block.timestamp;
-        
-        for (uint256 i = 0; i < count && gasleft() > 50000; i++) {
-            uint256 contractId = contractIds[i];
-            if (contractId > 0 && _triggerPayoutSafe(contractId)) {
-                successfulTriggers++;
-            }
-        }
-        
-        uint256 gasUsed = gasStart - gasleft();
-        emit AutomationExecuted(count, successfulTriggers, gasUsed);
     }
 
     /**
@@ -388,20 +323,20 @@ contract DummyUpgrade is AutomationCompatibleInterface, ReentrancyGuard, Ownable
     }
 
     /**
-     * @dev Configure automation settings
+     * @dev Configure time-based automation settings
      */
     function configureAutomation(
         bool _enabled,
         uint256 _gasLimit,
         uint256 _maxContractsPerCheck,
-        uint256 _interval
+        uint256 _timeInterval
     ) external onlyOwner {
         automationEnabled = _enabled;
         automationGasLimit = _gasLimit;
         maxContractsPerCheck = _maxContractsPerCheck;
-        automationInterval = _interval;
+        automationInterval = _timeInterval;
         
-        emit AutomationConfigChanged(_enabled, _gasLimit, _maxContractsPerCheck);
+        emit AutomationConfigChanged(_enabled, _gasLimit, _maxContractsPerCheck, _timeInterval);
     }
 
     /**
@@ -554,10 +489,75 @@ contract DummyUpgrade is AutomationCompatibleInterface, ReentrancyGuard, Ownable
         return address(this).balance;
     }
 
-    // Add event for reserve withdrawal
-    event ReserveWithdrawn(
-        uint256 indexed contractId,
-        address indexed seller,
-        uint256 amount
-    );
+    /**
+     * @dev MAIN TIME-BASED AUTOMATION FUNCTION
+     * This function will be called at regular intervals by Chainlink Time-based Upkeep
+     */
+    function performTimeBasedUpkeep() external {
+        require(automationEnabled, "Automation disabled");
+        
+        uint256 gasStart = gasleft();
+        uint256 successfulTriggers = 0;
+        uint256 checked = 0;
+        
+        // Update last check time
+        lastGlobalCheck = block.timestamp;
+        
+        // Check all active contracts for trigger conditions
+        for (uint256 i = 1; i <= contractCounter && checked < maxContractsPerCheck; i++) {
+            Contract storage c = contracts[i];
+            
+            // Skip if not eligible for checking
+            if (!c.active || c.triggered || block.timestamp >= c.endDate) {
+                continue;
+            }
+            
+            checked++;
+            
+            // Break if running low on gas
+            if (gasleft() < 100000) {
+                break;
+            }
+            
+            // Check price trigger condition
+            try this.getCurrentPrice(c.triggerToken) returns (uint256 currentPrice) {
+                if (currentPrice <= c.triggerPrice) {
+                    // Trigger payout for this contract
+                    if (_triggerPayoutSafe(i)) {
+                        successfulTriggers++;
+                    }
+                }
+            } catch {
+                // Skip contracts with price feed issues
+                continue;
+            }
+        }
+        
+        uint256 gasUsed = gasStart - gasleft();
+        emit AutomationExecuted(checked, successfulTriggers, gasUsed);
+    }
+
+    /**
+     * @dev Get time-based upkeep status
+     */
+    function getTimeBasedStatus() external view returns (
+        uint256 eligibleContracts,
+        uint256 nextCheckTime,
+        bool canExecute
+    ) {
+        uint256 eligible = 0;
+        
+        for (uint256 i = 1; i <= contractCounter; i++) {
+            Contract storage c = contracts[i];
+            if (c.active && !c.triggered && block.timestamp < c.endDate) {
+                eligible++;
+            }
+        }
+        
+        return (
+            eligible,
+            lastGlobalCheck + automationInterval,
+            automationEnabled && eligible > 0
+        );
+    }
 }
