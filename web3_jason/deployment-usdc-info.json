@@ -1,0 +1,22 @@
+{
+  "network": "fuji",
+  "contractAddress": "0x234dB951589E520BAc26E26f013aE4814d642546",
+  "usdcTokenAddress": "0xef58b27Ce030E2Afb7AD7631deaBA147fE9733FA",
+  "deployer": "0x12Ca88343378FB2Ea5bD84b928728a80720e73BC",
+  "timestamp": "2025-06-28T22:10:35.880Z",
+  "blockNumber": 42646846,
+  "contractType": "DummyUpgradeUSDC",
+  "features": [
+    "USDC Support",
+    "Time-based Automation",
+    "Dual Reserve System",
+    "Test Mode Enabled"
+  ],
+  "testPrices": {
+    "AVAX": "25.0",
+    "BTC": "30000.0",
+    "ETH": "2000.0",
+    "USDC": "1.0"
+  },
+  "deployerUSDCBalance": "10000.0"
+}
