@@ -1,0 +1,367 @@
+=============================================================================
+                   DUMMYUPGRADEUSDC CONTRACT TEST DOCUMENTATION
+                         USDC RESERVE SUPPORT VERSION 1.0
+=============================================================================
+
+CONTRACT OVERVIEW:
+------------------
+DummyUpgradeUSDC is an enhanced decentralized insurance protocol smart contract 
+that extends the original DummyUpgrade functionality with full USDC token support 
+for reserve funds. It integrates with Chainlink price feeds and TIME-BASED 
+AUTOMATION to provide automated insurance payouts with dual reserve token options 
+(AVAX native and USDC ERC-20).
+
+CORE FEATURES:
+--------------
+1. Dual reserve system (AVAX + USDC support)
+2. ERC-20 token integration with SafeERC20
+3. Chainlink Time-based Automation (Time-based only)
+4. Multi-token price monitoring (AVAX, BTC, ETH, USDC)
+5. Automated and manual payout mechanisms
+6. Enhanced emergency controls for both token types
+7. Gas-optimized batch processing
+8. USDC-specific balance tracking
+9. Mixed token payout handling
+10. Advanced reserve withdrawal system
+
+NEW USDC-SPECIFIC FEATURES:
+--------------------------
+1. USDC Token Integration:
+   - IERC20 interface with SafeERC20 utilities
+   - 6-decimal precision handling
+   - Approval-based transfers
+   - Balance tracking for both AVAX and USDC
+
+2. Dual Reserve System:
+   - isUSDCReserve boolean flag per contract
+   - AVAX reserves: Traditional native token handling
+   - USDC reserves: ERC-20 token handling with approvals
+   - Independent withdrawal mechanisms
+
+3. Enhanced Contract Structure:
+   - Additional isUSDCReserve field
+   - Reserve amount handles both token types
+   - Fee payments always in AVAX (simplified)
+   - Automated payout execution for both token types
+
+4. Advanced Emergency Functions:
+   - emergencyUSDCRecovery() for stuck USDC tokens
+   - emergencyAvaxRecovery() for stuck AVAX
+   - Separate balance checking functions
+
+TEST CONFIGURATION:
+------------------
+Framework: Mocha + Chai + Hardhat
+Network: Hardhat Local with USDC mock token
+Token Support: MockERC20 with 6-decimal USDC simulation
+Time Management: @nomicfoundation/hardhat-network-helpers
+Test Coverage: Comprehensive dual-token testing
+Event Testing: Enhanced event parsing for token types
+Automation Type: TIME-BASED UPKEEP with mixed payouts
+
+DEPLOYMENT TESTS:
+----------------
+- Should deploy with correct initial state
+  Status: PASSING
+  - Verifies testMode = true
+  - Verifies automationEnabled = true
+  - Verifies contractCounter = 0
+  - Verifies activeContractsCount = 0
+  - Validates USDC token address integration
+
+- Should initialize test prices correctly
+  Status: PASSING
+  - Tests setTestPrice() functionality
+  - Verifies price storage and retrieval
+  - Validates BigInt data types for all tokens
+  - Tests AVAX, BTC, ETH, USDC price initialization
+
+MOCK TOKEN DEPLOYMENT:
+---------------------
+- MockERC20 Contract:
+  - Name: "USD Coin"
+  - Symbol: "USDC"
+  - Decimals: 6 (matching real USDC)
+  - Mint functionality for testing
+  - Burn functionality for advanced scenarios
+
+- Initial Token Distribution:
+  - Seller: 10,000 USDC (10,000,000,000 units)
+  - Buyer: 5,000 USDC (5,000,000,000 units)
+  - Contract deployment with USDC address integration
+
+AVAX RESERVE CONTRACT CREATION TESTS:
+------------------------------------
+- Should create contract with AVAX reserve
+  Status: PASSING
+  - Tests traditional AVAX reserve creation
+  - Verifies ContractCreated event emission
+  - Validates isUSDCReserve = false
+  - Checks AVAX balance increases
+
+- Should reject AVAX contract with insufficient reserve
+  Status: PASSING
+  - Tests reserve amount validation
+  - Expects "Insufficient AVAX reserve sent" revert
+  - Validates msg.value checking
+
+USDC RESERVE CONTRACT CREATION TESTS:
+------------------------------------
+- Should create contract with USDC reserve
+  Status: PASSING
+  - Tests ERC-20 USDC reserve creation
+  - Requires USDC approval before creation
+  - Verifies isUSDCReserve = true
+  - Validates USDC balance tracking
+  - Checks 6-decimal precision handling
+
+- Should reject USDC contract when AVAX sent
+  Status: PASSING
+  - Tests mutually exclusive reserve types
+  - Expects "No AVAX needed for USDC reserve" revert
+  - Validates reserve type enforcement
+
+- Should reject USDC contract without approval
+  Status: PASSING
+  - Tests ERC-20 approval requirement
+  - Expects ERC20 transfer failure
+  - Validates proper approval workflow
+
+INSURANCE PURCHASE TESTS:
+------------------------
+- Should allow valid insurance purchase for AVAX contract
+  Status: PASSING
+  - Tests purchase of AVAX-reserved contracts
+  - Verifies ContractPurchased event emission
+  - Validates activeContractsCount increment
+  - Fee payment always in AVAX
+
+- Should allow valid insurance purchase for USDC contract
+  Status: PASSING
+  - Tests purchase of USDC-reserved contracts
+  - Verifies same purchase workflow
+  - Fee payment remains in AVAX (simplified)
+  - Validates cross-token functionality
+
+- Should reject insufficient payment
+  Status: PASSING
+  - Tests fee validation (always AVAX)
+  - Expects "Insufficient fee" revert
+  - Works for both reserve types
+
+MANUAL TRIGGER TESTS:
+--------------------
+- Should trigger AVAX payout when price condition is met
+  Status: PASSING
+  - Tests traditional AVAX payout mechanism
+  - Verifies PayoutTriggered event with isUSDCPayout = false
+  - Validates native token transfer
+  - Checks buyer AVAX balance increase
+
+- Should trigger USDC payout when price condition is met
+  Status: PASSING
+  - Tests ERC-20 USDC payout mechanism
+  - Verifies PayoutTriggered event with isUSDCPayout = true
+  - Validates ERC-20 token transfer
+  - Checks buyer USDC balance increase (6-decimal precision)
+
+- Should reject trigger when price condition not met
+  Status: PASSING
+  - Tests price validation for both token types
+  - Expects "Price condition not met" revert
+  - Works consistently across reserve types
+
+TIME-BASED AUTOMATION WITH MIXED TOKENS:
+---------------------------------------
+- Should execute time-based upkeep successfully
+  Status: PASSING
+  - Tests performTimeBasedUpkeep() with mixed reserves
+  - Creates contracts with different trigger prices
+  - Verifies AutomationExecuted event emission
+  - Processes 2 out of 3 contracts (different trigger thresholds)
+  - Validates gas usage tracking
+
+- Should return correct time-based status
+  Status: PASSING
+  - Tests getTimeBasedStatus() function
+  - Verifies eligibleContracts count = 3
+  - Validates nextCheckTime calculation
+  - Tests canExecute boolean logic
+
+- Should handle mixed AVAX and USDC payouts
+  Status: PASSING
+  - Tests simultaneous AVAX and USDC payouts
+  - Verifies buyer receives both token types
+  - Validates balance increases for both tokens
+  - Price trigger: $15 (triggers $18 contracts, not $10)
+
+RESERVE WITHDRAWAL TESTS:
+------------------------
+- Should allow seller to withdraw AVAX from unpurchased contract
+  Status: PASSING
+  - Tests withdrawReserve() for AVAX contracts
+  - Verifies ReserveWithdrawn event with isUSDCWithdrawal = false
+  - Validates native token return to seller
+  - Accounts for gas costs in balance calculations
+
+- Should allow seller to withdraw USDC from unpurchased contract
+  Status: PASSING
+  - Tests withdrawReserve() for USDC contracts
+  - Verifies ReserveWithdrawn event with isUSDCWithdrawal = true
+  - Validates ERC-20 token return to seller
+  - Precise 6-decimal amount verification
+
+- Should prevent withdrawal from active contract
+  Status: PASSING
+  - Tests protection for both token types
+  - Expects "Still active" revert
+  - Works consistently across reserve types
+
+CLAIM PAYOUT TESTS:
+------------------
+- Should allow beneficiary to claim AVAX payout
+  Status: PASSING
+  - Tests manual claiming for AVAX reserves
+  - Uses autoExecute = false for manual workflow
+  - Verifies PayoutClaimed event with isUSDCPayout = false
+  - Validates native token transfer to beneficiary
+
+- Should allow beneficiary to claim USDC payout
+  Status: PASSING
+  - Tests manual claiming for USDC reserves
+  - Uses autoExecute = false for manual workflow
+  - Verifies PayoutClaimed event with isUSDCPayout = true
+  - Validates ERC-20 token transfer with 6-decimal precision
+
+- Should prevent non-beneficiary from claiming
+  Status: PASSING
+  - Tests access control for both token types
+  - Expects "Not beneficiary" revert
+  - Consistent security across reserve types
+
+- Should prevent double claiming
+  Status: PASSING
+  - Tests claim state tracking
+  - Expects "Already claimed" revert
+  - Works for both AVAX and USDC payouts
+
+ENHANCED CONTRACT GETTER TESTS:
+------------------------------
+- Should return complete contract information
+  Status: PASSING
+  - Tests getContract() function with USDC support
+  - Verifies all contract fields including isUSDCReserve
+  - Validates proper data type handling
+  - Returns accurate reserve amounts and token types
+
+BALANCE FUNCTIONS TESTS:
+-----------------------
+- Should return correct AVAX balance
+  Status: PASSING
+  - Tests getContractBalance() function
+  - Verifies native token balance tracking
+  - Returns balance in wei units
+
+- Should return correct USDC balance
+  Status: PASSING
+  - Tests getUSDCBalance() function
+  - Verifies ERC-20 token balance tracking
+  - Returns balance in 6-decimal USDC units
+
+EMERGENCY FUNCTIONS TESTS:
+-------------------------
+- Should allow owner to pause automation
+  Status: PASSING
+  - Tests emergencyPause() function
+  - Works for both token types
+  - Verifies automationEnabled = false
+
+- Should allow owner to resume automation
+  Status: PASSING
+  - Tests emergencyResume() function
+  - Restores functionality for both token types
+  - Updates lastGlobalCheck timestamp
+
+- Should allow owner to recover stuck USDC
+  Status: PASSING
+  - Tests emergencyUSDCRecovery() function
+  - Validates ERC-20 token recovery mechanism
+  - Transfers specified USDC amount to owner
+  - Includes proper balance validation
+
+- Should allow owner to recover stuck AVAX
+  Status: PASSING
+  - Tests emergencyAvaxRecovery() function
+  - Validates native token recovery mechanism
+  - Transfers specified AVAX amount to owner
+  - Accounts for gas costs in balance checks
+
+- Should prevent non-owner from emergency functions
+  Status: PASSING
+  - Tests access control for all emergency functions
+  - Expects "Ownable: caller is not the owner" reverts
+  - Covers both USDC and AVAX recovery functions
+
+EDGE CASES TESTS:
+----------------
+- Should handle contract expiration correctly
+  Status: PASSING
+  - Tests expiration for both token types
+  - Expects "Contract expired" revert
+  - Consistent behavior across reserve types
+
+- Should handle automation with no eligible contracts
+  Status: PASSING
+  - Tests empty automation execution
+  - Verifies AutomationExecuted event emission
+  - Graceful handling for both token environments
+
+DUAL-TOKEN ARCHITECTURE:
+-----------------------
+New Contract Structure Fields:
+- isUSDCReserve: boolean flag indicating reserve token type
+- reserveAmount: handles both AVAX (wei) and USDC (6-decimal) amounts
+- All other fields remain compatible with original design
+
+Token Type Differentiation:
+- AVAX Reserves: msg.value transfers, wei units
+- USDC Reserves: ERC-20 transfers, 6-decimal units, approval required
+- Fee Payments: Always AVAX (simplified billing model)
+
+Event Enhancements:
+- ContractCreated: Added isUSDCReserve parameter
+- PayoutTriggered: Added isUSDCPayout parameter
+- PayoutClaimed: Added isUSDCPayout parameter
+- ReserveWithdrawn: Added isUSDCWithdrawal parameter
+
+USDC INTEGRATION SPECIFICATIONS:
+-------------------------------
+Token Contract Integration:
+- IERC20 interface with SafeERC20 for secure transfers
+- Immutable USDC token address set in constructor
+- 6-decimal precision handling throughout
+- Approval-based transfer workflow
+
+Reserve Creation Workflow:
+1. AVAX Reserves:
+   - Call createContract() with isUSDCReserve = false
+   - Send AVAX via msg.value for reserve amount
+   - No token approvals required
+
+2. USDC Reserves:
+   - Approve USDC spending: usdcToken.approve(contract, amount)
+   - Call createContract() with isUSDCReserve = true
+   - No AVAX needed in msg.value
+   - Contract transfers USDC using safeTransferFrom()
+
+Payout Execution Logic:
+```solidity
+function _executePayout(Contract storage c) internal {
+    if (c.isUSDCReserve) {
+        // USDC payout with 6-decimal precision
+        usdcToken.safeTransfer(c.beneficiary, c.reserveAmount);
+    } else {
+        // AVAX payout in wei
+        payable(c.beneficiary).transfer(c.reserveAmount);
+    }
+}

@@ -1,0 +1,289 @@
+=============================================================================
+                   TIME-BASED MULTI-TOKEN AUTOMATION TEST DOCUMENTATION
+                         DUMMYUPGRADE CONTRACT VERSION 3.1
+=============================================================================
+
+TEST OVERVIEW:
+--------------
+AddPriceFeed_TimeBased.test.js provides comprehensive testing for the enhanced 
+time-based multi-token automation functionality in the DummyUpgrade contract. 
+This test suite validates pure time-based automation with multiple cryptocurrency 
+price feeds (ETH, BTC, LINK, USDC, AVAX) and Chainlink's Time-based Upkeep system.
+
+ENHANCED FEATURES TESTED:
+------------------------
+1. Multi-token price feed management (ETH, BTC, LINK, USDC, AVAX)
+2. Time-based automation exclusively (no condition-based logic)
+3. Cross-token insurance contract creation with varying parameters
+4. Scheduled multi-token automated triggering system
+5. Hourly interval-based automation execution
+6. Time-based price feed integration and validation
+7. Mixed trigger condition handling in time-based mode
+8. Time interval configuration and management
+
+TEST CONFIGURATION:
+------------------
+Framework: Mocha + Chai + Hardhat
+Network: Hardhat Local Network with time manipulation
+Time Management: @nomicfoundation/hardhat-network-helpers
+Price Feeds: Avalanche Fuji Testnet Chainlink Oracle Addresses
+Test Coverage: Pure time-based multi-token automation workflows
+Event Testing: Transaction receipt-based AutomationExecuted verification
+Automation Mode: Time-based only (interval > 0)
+
+CHAINLINK PRICE FEED ADDRESSES (AVALANCHE FUJI):
+-----------------------------------------------
+ETH/USD:  0x86d67c3D38D2bCeE722E601025C25a575021c6EA
+BTC/USD:  0x31CF013A08c6Ac228C94551d535d5BAfE19c602a
+LINK/USD: 0x34C4c526902d88a3Aa98DB8a9b802603EB1E3470
+USDC/USD: 0x97FE42a7E96640D932bbc0e1580c73E705A8EB73
+
+TIME-BASED AUTOMATION ARCHITECTURE:
+----------------------------------
+Primary Function:
+- performTimeBasedUpkeep() - Core time-based automation
+  - Executes on scheduled intervals (1 hour, 30 minutes, etc.)
+  - Processes all active contracts regardless of condition checks
+  - No parameters required (pure time-based execution)
+  - Gas-optimized for batch processing multiple tokens
+
+Configuration Parameters:
+- automationEnabled: true
+- gasLimit: 800,000
+- maxContractsPerCheck: 50
+- timeInterval: 3600 (1 hour) / 1800 (30 minutes)
+
+Event Emission:
+- AutomationExecuted(timestamp, contractsChecked, contractsTriggered)
+
+PRICE FEED MANAGEMENT TESTS:
+---------------------------
+✓ Should allow owner to add ETH price feed
+  - Tests addPriceFeed() function for Ethereum
+  - Verifies PriceFeedUpdated event emission
+  - Validates price feed address storage in priceFeeds mapping
+
+✓ Should allow owner to add BTC price feed
+  - Tests addPriceFeed() function for Bitcoin
+  - Verifies oracle integration for BTC/USD pair
+  - Validates address mapping storage and retrieval
+
+✓ Should allow owner to add LINK price feed
+  - Tests addPriceFeed() function for Chainlink token
+  - Verifies LINK/USD price feed integration
+  - Validates token string to address mapping functionality
+
+✓ Should allow owner to add USDC price feed
+  - Tests addPriceFeed() function for USD Coin
+  - Verifies stablecoin price feed integration
+  - Validates USDC/USD oracle connection establishment
+
+✓ Should reject adding price feed with zero address
+  - Tests input validation for invalid addresses
+  - Expects "Invalid feed address" revert message
+  - Validates security measures for price feed addition
+
+✓ Should prevent non-owner from adding price feeds
+  - Tests access control with Ownable pattern
+  - Expects "Ownable: caller is not the owner" revert
+  - Validates administrative privilege requirements
+
+✓ Should allow updating existing price feed
+  - Tests price feed address updates and overwriting
+  - Verifies PriceFeedUpdated event for modifications
+  - Validates dynamic price feed management capability
+
+MULTI-TOKEN CONTRACT CREATION TESTS:
+-----------------------------------
+✓ Should create ETH-based insurance contract
+  - Tests createContract() with ETH as trigger token
+  - Verifies ContractCreated event with ETH-specific parameters
+  - Validates $2,000 trigger price configuration
+  - Tests 1 AVAX reserve with 0.1 AVAX insurance fee structure
+
+✓ Should create BTC-based insurance contract
+  - Tests createContract() with BTC as trigger token
+  - Verifies ContractCreated event with BTC-specific parameters
+  - Validates $30,000 trigger price for Bitcoin contracts
+  - Tests 5 AVAX reserve with 0.5 AVAX insurance fee (higher value)
+
+✓ Should create LINK-based insurance contract
+  - Tests createContract() with LINK as trigger token
+  - Verifies ContractCreated event with LINK-specific parameters
+  - Validates $10 trigger price for Chainlink token contracts
+  - Tests 0.5 AVAX reserve with 0.05 AVAX insurance fee (smaller scale)
+
+MULTI-TOKEN PRICE RETRIEVAL TESTS:
+---------------------------------
+✓ Should retrieve ETH test price correctly
+  - Tests getCurrentPrice() function for Ethereum
+  - Verifies $2,500 test price return (2500 * 10^8 format)
+  - Validates 8-decimal precision price format consistency
+
+✓ Should retrieve BTC test price correctly
+  - Tests getCurrentPrice() function for Bitcoin
+  - Verifies $35,000 test price return (35000 * 10^8 format)
+  - Validates high-value cryptocurrency price handling
+
+✓ Should retrieve LINK test price correctly
+  - Tests getCurrentPrice() function for Chainlink token
+  - Verifies $15 test price return (15 * 10^8 format)
+  - Validates mid-range token price retrieval accuracy
+
+✓ Should return zero for token without test price
+  - Tests getCurrentPrice() for uninitialized tokens
+  - Verifies 0 return for INVALID token symbols
+  - Validates graceful handling of missing price data
+
+MULTI-TOKEN TRIGGER FUNCTIONALITY TESTS:
+---------------------------------------
+✓ Should trigger ETH contract when price drops
+  - Sets ETH price to $1,800 (below $2,000 trigger threshold)
+  - Tests triggerPayout() function for ETH-based contract
+  - Verifies PayoutTriggered event with correct parameters
+  - Validates 1 AVAX payout amount to beneficiary
+
+✓ Should trigger BTC contract when price drops
+  - Sets BTC price to $25,000 (below $30,000 trigger threshold)
+  - Tests triggerPayout() function for BTC-based contract
+  - Verifies PayoutTriggered event with BTC-specific parameters
+  - Validates 5 AVAX payout amount to beneficiary
+
+✓ Should not trigger when price is above threshold
+  - Sets ETH price to $2,200 (above $2,000 trigger threshold)
+  - Tests triggerPayout() rejection mechanism
+  - Expects "Price condition not met" revert message
+  - Validates price condition logic accuracy
+
+TIME-BASED MULTI-TOKEN AUTOMATION TESTS:
+---------------------------------------
+✓ Should execute time-based automation for multiple tokens
+  - Configures 1-hour interval time-based automation
+  - Sets all token prices below their respective triggers:
+    * ETH: $1,800 < $2,000 trigger
+    * BTC: $25,000 < $30,000 trigger  
+    * LINK: $8 < $10 trigger
+  - Tests performTimeBasedUpkeep() execution
+  - Verifies AutomationExecuted event emission via receipt parsing
+  - Validates 3 contracts triggered simultaneously
+  - Confirms totalTriggeredContracts() = 3
+
+✓ Should handle mixed trigger conditions in time-based mode
+  - Sets selective trigger conditions:
+    * ETH: $1,800 < $2,000 trigger (TRIGGER)
+    * BTC: $32,000 > $30,000 trigger (NO TRIGGER)
+    * LINK: $8 < $10 trigger (TRIGGER)
+  - Tests performTimeBasedUpkeep() selective processing
+  - Verifies 2 contracts triggered, 1 contract unchanged
+  - Validates intelligent filtering in time-based execution
+
+✓ Should not trigger when no price conditions are met in time-based
+  - Sets all prices above trigger thresholds:
+    * ETH: $2,200 > $2,000 trigger
+    * BTC: $32,000 > $30,000 trigger
+    * LINK: $12 > $10 trigger
+  - Tests performTimeBasedUpkeep() with no triggers
+  - Verifies AutomationExecuted event still emitted
+  - Validates totalTriggeredContracts() = 0 (no new triggers)
+
+✓ Should handle time-based automation with hourly intervals
+  - Tests complex hourly interval automation workflow
+  - First execution: Triggers ETH and BTC contracts
+  - Time progression: Fast forwards 1 hour (3600 seconds)
+  - Second phase: Creates new LINK contract
+  - Sets LINK price below trigger threshold
+  - Second execution: Triggers newly created LINK contract
+  - Verifies AutomationExecuted events for both executions
+  - Validates cumulative behavior with at least 3 total triggers
+
+TIME-BASED PRICE FEED INTEGRATION TEST:
+--------------------------------------
+✓ Should handle complete multi-token time-based workflow
+  - Step 1: Adds price feeds for ETH, BTC, LINK, USDC
+  - Step 2: Sets test prices for all 4 tokens
+  - Step 3: Configures 30-minute time-based automation
+  - Step 4: Creates 4 insurance contracts (one per token)
+  - Step 5: Purchases all 4 insurance contracts
+  - Step 6: Sets mixed trigger conditions:
+    * ETH: $1,800 < $2,000 trigger (TRIGGER)
+    * BTC: $32,000 > $30,000 trigger (NO TRIGGER)
+    * LINK: $8 < $10 trigger (TRIGGER)
+    * USDC: $0.90 < $0.95 trigger (TRIGGER)
+  - Step 7: Executes time-based automation
+  - Validates 3 contracts triggered (ETH, LINK, USDC)
+  - Confirms 1 contract remaining active (BTC)
+
+TIME-BASED AUTOMATION CONFIGURATION TESTS:
+------------------------------------------
+✓ Should configure time-based automation correctly
+  - Tests configureAutomation() with 1-hour intervals
+  - Verifies automation parameter storage
+  - Validates time-based mode activation (timeInterval > 0)
+
+✓ Should handle time interval changes
+  - Tests dynamic interval modification
+  - Changes from 1-hour (3600s) to 30-minute (1800s) intervals
+  - Verifies configuration updates take effect
+
+✓ Should disable time-based automation when interval is 0
+  - Tests time-based mode deactivation
+  - Sets timeInterval = 0 (switches to condition-based mode)
+  - Verifies mode transition functionality
+
+AVAX PRICE INTEGRATION WITH TIME-BASED:
+--------------------------------------
+✓ Should work with AVAX in time-based automation
+  - Configures 1-hour time-based automation for AVAX
+  - Sets AVAX test price to $25
+  - Creates AVAX-based insurance contract with $20 trigger
+  - Sets AVAX price to $18 (below trigger)
+  - Executes time-based automation
+  - Verifies 1 AVAX contract triggered successfully
+
+TOKEN-SPECIFIC TEST CONFIGURATION:
+---------------------------------
+ETH Configuration:
+- Test Price: $2,500 → $1,800 (trigger: $2,000)
+- Reserve: 1 AVAX
+- Insurance Fee: 0.1 AVAX
+- Contract Duration: 2 hours
+
+BTC Configuration:
+- Test Price: $35,000 → $25,000 (trigger: $30,000)
+- Reserve: 5 AVAX (higher value asset)
+- Insurance Fee: 0.5 AVAX
+- Contract Duration: 2 hours
+
+LINK Configuration:
+- Test Price: $15 → $8 (trigger: $10)
+- Reserve: 0.5 AVAX
+- Insurance Fee: 0.05 AVAX
+- Contract Duration: 2 hours
+
+USDC Configuration:
+- Test Price: $1.00 → $0.90 (trigger: $0.95)
+- Reserve: 0.1 AVAX (stablecoin)
+- Insurance Fee: 0.01 AVAX
+- Contract Duration: 2 hours
+
+AVAX Configuration:
+- Test Price: $25 → $18 (trigger: $20)
+- Reserve: 1 AVAX
+- Insurance Fee: 0.1 AVAX
+- Contract Duration: 2 hours
+
+TIME-BASED AUTOMATION INTERVALS:
+-------------------------------
+Standard Intervals:
+- 1 Hour (3600 seconds) - Regular monitoring
+- 30 Minutes (1800 seconds) - Frequent monitoring
+- 15 Minutes (900 seconds) - High-frequency monitoring
+
+Configuration Format:
+```javascript
+await dummyUpgrade.configureAutomation(
+    true,     // automationEnabled
+    800000,   // gasLimit
+    50,       // maxContractsPerCheck
+    3600      // timeInterval (1 hour)
+);
