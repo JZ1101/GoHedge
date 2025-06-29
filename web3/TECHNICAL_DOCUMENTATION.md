@@ -167,7 +167,7 @@ function _syncWhitelistCrossChain(
   - See [README.md#testing](./README.md#testing) for details.
   - To run all tests, use:
     ```shell
-    npm run test
+    npm run test:all
     ```
 
 ---
@@ -197,4 +197,15 @@ function _syncWhitelistCrossChain(
 
 ---
 
-*For any questions, see the README or contact the team via the repository.*
+## Achievements
+
+- **Multi-Chainlink Integration:** Successfully integrated three Chainlink services (Data Feeds, Automation, and CCIP) in a single protocol for comprehensive Web3 functionality.
+- **Cross-Chain Ready:** Implemented Chainlink CCIP for seamless cross-chain whitelist synchronization, enabling true multi-chain access control.
+- **Dual Reserve System:** Built flexible insurance system supporting both native token (AVAX) and stablecoin (USDC) reserves and payouts.
+- **Automated Protocol:** Achieved fully automated insurance execution using Chainlink Time-based Automation for gas-efficient, trustless operations.
+- **Comprehensive Security:** Implemented OpenZeppelin standards with reentrancy protection, access control, and emergency management systems.
+- **High Test Coverage:** Developed extensive test suite covering core functionality, security scenarios, performance optimization, and integration testing.
+- **Gas Optimization:** Optimized contract architecture for batch operations and automation, reducing operational costs significantly.
+- **Production-Ready Deployment:** Successfully deployed on Avalanche Fuji Testnet with real Chainlink price feeds and CCIP integration.
+- **Developer-Friendly:** Created comprehensive documentation, deployment scripts, and usage examples for easy protocol adoption.
+- **Scalable Architecture:** Designed modular contract system that supports future expansion to additional chains and insurance
