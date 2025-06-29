@@ -104,7 +104,7 @@ web3/
 │   ├── dummyupgrade.sol         # Core insurance protocol
 │   ├── DummyUpgradeUSDC.sol     # USDC reserve support
 │   ├── DummyUpgradeUSDC_Whitelist.sol  # Whitelist functionality
-│   ├── GoHedgePreProduction.sol # Production-ready version
+│   ├── GoHedgePreProduction.sol # MAIN CONTRACT - Production-ready version with all features
 │   └── MockERC20.sol           # Token testing utilities
 ├── scripts/                     # Deployment and utility scripts
 │   ├── deployGoHedgePreProduction.js
@@ -202,10 +202,14 @@ CHAINLINK_AVAX_USD_FEED=0x5498BB86BC934c8D34FDA08E81D444153d0D06aD
 
 ### Contract Variants
 
+The GoHedge protocol includes four main contract variants that demonstrate iterative development:
+
 1. **DummyUpgrade** - Core insurance protocol with AVAX reserves
 2. **DummyUpgradeUSDC** - Enhanced version with USDC reserve support
 3. **DummyUpgradeUSDC_Whitelist** - Adds whitelist functionality
-4. **GoHedgePreProduction** - Production-ready version with all features
+4. **GoHedgePreProduction** - **This is the main contract** - Production-ready version with all features including Chainlink CCIP integration
+
+**Note:** GoHedgePreProduction.sol represents the complete, production-ready implementation of the GoHedge insurance protocol. The other contracts serve as development iterations and testing variants, while GoHedgePreProduction.sol contains the full feature set intended for deployment and real-world usage.
 
 ### Security Features
 - **Reentrancy Protection**: ReentrancyGuard implementation prevents reentrancy attacks
@@ -275,15 +279,17 @@ node scripts/get-abi-usdc.js
 ### Network Deployment
 
 ```shell
-# Deploy to Avalanche Fuji Testnet
+# Deploy the MAIN CONTRACT to Avalanche Fuji Testnet
 npx hardhat run scripts/deployGoHedgePreProduction.js --network fuji
 
-# Verify contract on Snowtrace
+# Verify the main contract on Snowtrace
 npx hardhat verify --network fuji <CONTRACT_ADDRESS>
 
-# Run testnet tests
+# Run main contract testnet tests
 npx hardhat test test/GoHedgePreProduction.testnet.test.js --network fuji
 ```
+
+**Note:** The deployGoHedgePreProduction.js script deploys the main GoHedgePreProduction.sol contract, which is the production-ready version with full Chainlink integration.
 
 **Important Notes for Testnet Deployment:**
 - The USDC token address in `deployment-gohedge-info.json` is a **MockERC20 token**, not real USDC
