@@ -40,7 +40,13 @@ class TestRunner {
             console.log(`Running: ${fileName}`);
             console.log(`${'='.repeat(80)}`);
             
+            // Special handling for testnet tests - force Fuji network
             const args = ['test', testFile];
+            if (fileName.includes('testnet')) {
+                args.push('--network', 'fuji');
+                console.log('Detected testnet test - forcing Fuji network');
+            }
+            
             if (this.verbose) args.push('--verbose');
             
             const child = spawn('npx', ['hardhat', ...args], {
@@ -53,42 +59,61 @@ class TestRunner {
             let errorOutput = '';
 
             if (!this.verbose) {
-                child.stdout?.on('data', (data) => {
+                child.stdout.on('data', (data) => {
                     output += data.toString();
                 });
 
-                child.stderr?.on('data', (data) => {
+                child.stderr.on('data', (data) => {
                     errorOutput += data.toString();
                 });
             }
 
             child.on('close', (code) => {
-                const endTime = Date.now();
-                const duration = endTime - startTime;
+                const duration = Date.now() - startTime;
                 
-                const result = {
-                    file: fileName,
-                    path: testFile,
-                    success: code === 0,
-                    duration: duration,
-                    output: output,
-                    error: errorOutput
-                };
-
                 if (code === 0) {
                     console.log(`PASSED: ${fileName} (${duration}ms)`);
+                    const result = {
+                        file: fileName,
+                        path: testFile,
+                        success: true,
+                        duration,
+                        output: output,
+                        error: null
+                    };
                     this.results.passed.push(result);
+                    resolve(result);
                 } else {
                     console.log(`FAILED: ${fileName} (${duration}ms)`);
-                    this.results.failed.push(result);
+                    const fullError = errorOutput || output;
                     
-                    if (!this.verbose && errorOutput) {
-                        console.log(`\nError output for ${fileName}:`);
-                        console.log(errorOutput.slice(-1000)); // Show last 1000 chars
+                    // Extract meaningful error message
+                    let errorMessage = 'Test failed';
+                    if (fullError) {
+                        // Look for common error patterns
+                        const lines = fullError.split('\n');
+                        for (const line of lines) {
+                            if (line.includes('Error:') || line.includes('AssertionError:') || line.includes('Failed to connect')) {
+                                errorMessage = line.trim();
+                                break;
+                            }
+                        }
                     }
+                    
+                    console.log(`\nError output for ${fileName}:`);
+                    console.log(errorMessage);
+                    
+                    const result = {
+                        file: fileName,
+                        path: testFile,
+                        success: false,
+                        duration,
+                        output: fullError,
+                        error: errorMessage
+                    };
+                    this.results.failed.push(result);
+                    resolve(result);
                 }
-
-                resolve(result);
             });
 
             child.on('error', (error) => {
