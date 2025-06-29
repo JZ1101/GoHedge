@@ -1,0 +1,11 @@
+{
+  "network": "fuji",
+  "contractAddress": "0xc62C15AD56f54757bb074e0779aE85e54FD67861",
+  "deployer": "0xe2C3465d71D5A2EA1efc52CCaDd843bcC93ca18D",
+  "buyer": "0xCA385E3caFa97B00754607E9226dEbFb1e1e6841",
+  "deploymentTime": "2025-06-26T23:01:45.256Z",
+  "initialBalances": {
+    "deployer": "24.759999999997251656",
+    "buyer": "12.9"
+  }
+}

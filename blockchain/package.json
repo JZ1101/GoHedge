@@ -1,0 +1,19 @@
+{
+  "name": "yieldforward-insurance",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "npx hardhat test",
+    "deploy": "npx hardhat run scripts/deploy.js",
+    "compile": "npx hardhat compile"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.14",
+    "hardhat": "^2.19.0"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.8.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "dotenv": "^16.5.0"
+  }
+}
