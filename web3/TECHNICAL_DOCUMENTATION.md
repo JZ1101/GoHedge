@@ -1,5 +1,17 @@
 # GoHedge Technical Documentation
 
+## Table of Contents
+- [Overview](#overview)
+- [Submission Requirements Checklist](#submission-requirements-checklist)
+- [Architecture & Stack](#architecture--stack)
+- [Core Features](#core-features)
+- [Example Chainlink Integration](#example-chainlink-integration)
+- [Deployment & Usage](#deployment--usage)
+- [Security & Testing](#security--testing)
+- [Value Proposition](#value-proposition)
+- [Roadmap](#roadmap)
+- [References](#references)
+
 ## Overview
 
 GoHedge is a decentralized insurance protocol deployed on Avalanche Fuji Testnet. It leverages multiple Chainlink services to automate insurance payouts based on real-time price data and supports cross-chain whitelist synchronization using Chainlink CCIP. The protocol is designed for extensibility, security, and composability in DeFi and RWA tokenization use cases.
@@ -15,17 +27,13 @@ GoHedge is a decentralized insurance protocol deployed on Avalanche Fuji Testnet
   - All Chainlink integrations are in smart contracts (not just frontend)
 
 - **Video Demo:**  
-  - [Link to 3-5 minute public demo video](https://your-demo-link)
+  - [Link to public demo video](https://your-demo-link)
 
 - **Source Code:**  
-  - [GitHub Repository (public)](https://github.com/your-repo/gohedge)
+  - [GitHub Repository (public)](https://github.com/JZ1101/GoHedge)
 
 - **README:**  
   - [README.md](./README.md)  
-  - [Chainlink Usage Reference](./README.md#chainlink-integration)
-
-- **Live Demo (optional):**  
-  - [Deployed contract on Fuji Testnet](https://testnet.snowtrace.io/address/your-contract)
 
 ---
 
@@ -114,7 +122,21 @@ function _syncWhitelistCrossChain(
 ## Deployment & Usage
 
 - **Deploy on Fuji Testnet:**  
-  See [`scripts/deployUSDC.js`](./scripts/deployUSDC.js) for deployment steps.
+  Use the deployment script [`scripts/deployGoHedgePreProduction.js`](./scripts/deployGoHedgePreProduction.js):
+
+  ```shell
+  npx hardhat run scripts/deployGoHedgePreProduction.js --network fuji
+  ```
+
+  This script will:
+  - Deploy a mock USDC token for testing.
+  - Deploy the GoHedgePreProduction contract with Fuji AVAX/USD price feed and Fuji CCIP router.
+  - Mint 10,000 USDC to the deployer.
+  - Output contract addresses and save deployment info to `deployment-gohedge-info.json`.
+
+  **Requirements:**
+  - Ensure your `.env` file contains a funded `DEPLOYER_PRIVATE_KEY` for Fuji.
+  - The Fuji AVAX/USD price feed and Fuji CCIP router addresses are hardcoded in the script for correct deployment.
 
 - **Configure Automation:**  
   Use `configureAutomation()` to set gas limits, batch size, and interval.
@@ -141,7 +163,12 @@ function _syncWhitelistCrossChain(
 
 - **Comprehensive Tests:**  
   - Core, security, performance, and integration tests in `test/` folder.
+  - CCIP functionality is covered by simple integration tests; all other core functions are fully tested.
   - See [README.md#testing](./README.md#testing) for details.
+  - To run all tests, use:
+    ```shell
+    npm run test
+    ```
 
 ---
 
@@ -166,7 +193,7 @@ function _syncWhitelistCrossChain(
 
 - [Chainlink Documentation](https://docs.chain.link/)
 - [Avalanche Fuji Testnet](https://chainlist.org/chain/43113)
-- [GoHedge GitHub](https://github.com/your-repo/gohedge)
+- [GoHedge GitHub](https://github.com/JZ1101/GoHedge)
 
 ---
 
