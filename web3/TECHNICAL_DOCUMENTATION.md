@@ -32,18 +32,13 @@ GoHedge is a comprehensive decentralized insurance protocol deployed on Avalanch
   - [COMPLETED] All Chainlink integrations are in smart contracts (not frontend only)
 
 - **Video Demo:**  
-  - [Link to public demo video](https://your-demo-link)
+  - [Link to public demo video](https://youtu.be/TjyQAORsQ0w)
 
 - **Source Code:**  
   - [COMPLETED] [GitHub Repository (public)](https://github.com/JZ1101/GoHedge)
 
 - **README:**  
   - [COMPLETED] [README.md](./README.md) - Comprehensive technical documentation
-
-- **Documentation:**
-  - [COMPLETED] Technical documentation with detailed examples
-  - [COMPLETED] Test documentation with 70+ test scenarios
-  - [COMPLETED] API reference and usage examples
 
 ---
 
