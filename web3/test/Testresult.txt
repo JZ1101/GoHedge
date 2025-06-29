@@ -1,0 +1,167 @@
+PS C:\Personal_Files\UCL_FT\Blockchain_Technologies\GoHedge\web3> npx hardhat test test/GoHedgePreProduction.testnet.test.js --network fuji
+[dotenv@16.6.0] injecting env (5) from .env
+
+
+  GoHedgePreProduction - Testnet Integration Test Suite
+=== CONNECTING TO DEPLOYED TESTNET CONTRACTS ===
+GoHedge Contract Address: 0x93A8dB48b19E3f4Ec4DB864aBEf054560a3E7257
+Mock USDC Address: 0x10268c766Ade3610Ff8F6ceF42Ec90B5AaF6c311
+Deployer: 0x12Ca88343378FB2Ea5bD84b928728a80720e73BC
+User1: 0xb29618aA1D54aCCd996FaC607DB80EAE23725Ac9
+User2: 0x12Ca88343378FB2Ea5bD84b928728a80720e73BC
+Checking GoHedge contract existence...
+GoHedge contract found at address
+Testing contract connection...
+Test Mode: true
+GoHedge contract connection successful
+Checking USDC contract...
+Connected to existing USDC contract: USD Coin
+Deployer AVAX Balance: 2.90487789371907645
+Deployer USDC Balance: 10000.0
+=== TESTNET CONNECTION SUCCESSFUL ===
+
+    1. Basic Contract Verification
+--- Verifying Contract State ---
+Test Mode: true
+Automation Enabled: true
+USDC contract verified
+Current AVAX Test Price: $30.0
+Current Contract Count: 3
+Contract verification completed successfully
+      ✔ Should verify contract is operational (1333ms)
+    2. AVAX Contract Creation Test
+--- AVAX Contract Creation Test ---
+Initial contract count: 3
+Step 1: Creating AVAX contract...
+Contract timing: start=1751232964, current=1751232974, end=1751247364
+Waiting for contract creation transaction...
+Contract created! Gas used: 243716
+Transaction: https://testnet.snowtrace.io/tx/0xf07237df41a5186e9fb11000b46e2bc9c9696f26d07d52e05264b5f64e55ae02
+New contract count: 4
+Previous count: 3
+✓ Contract counter incremented correctly
+Contract balance: 0.04 AVAX
+✓ Contract received AVAX reserve
+AVAX contract creation test completed successfully
+      ✔ Should successfully create an AVAX contract (5315ms)
+    3. Contract Retrieval Test
+--- Contract Retrieval Test ---
+Current contract count: 4
+Attempting to retrieve contract with ID: 4
+Successfully retrieved contract
+Contract data structure:
+Type: object
+Length: 17
+Raw data: Result(17) [
+  '0x12Ca88343378FB2Ea5bD84b928728a80720e73BC',
+  '0x0000000000000000000000000000000000000000',
+  '0x0000000000000000000000000000000000000000',
+  '0x12Ca88343378FB2Ea5bD84b928728a80720e73BC',
+  'AVAX',
+  2000000000n,
+  false,
+  10000000000000000n,
+  5000000000000000n,
+  1751232964n,
+  1751247364n,
+  false,
+  false,
+  false,
+  true,
+  false,
+  0n
+]
+Contract appears to be array-like:
+  [0]: 0x12Ca88343378FB2Ea5bD84b928728a80720e73BC
+  [1]: 0x0000000000000000000000000000000000000000
+  [2]: 0x0000000000000000000000000000000000000000
+  [3]: 0x12Ca88343378FB2Ea5bD84b928728a80720e73BC
+  [4]: AVAX
+  [5]: 2000000000
+  [6]: false
+  [7]: 10000000000000000
+  [8]: 5000000000000000
+  [9]: 1751232964
+✓ Seller address found: 0x12Ca88343378FB2Ea5bD84b928728a80720e73BC
+✓ Trigger price found: 0x12Ca88343378FB2Ea5bD84b928728a80720e73BC
+Failed to retrieve contract 4: expected '0x12Ca88343378FB2Ea5bD84b928728a80720…' to equal 2000000000
+This might be due to contract indexing differences
+      ✔ Should be able to retrieve contract information (319ms)
+    4. Price Management Test
+--- Price Management Test ---
+Initial AVAX price: $30.0
+Contract is in test mode, testing price setting...
+Setting price to: $30.0
+Price updated! Gas used: 29121
+✓ Verified price: $30.0
+Resetting to initial price...
+✓ Price reset to: $30.0
+Price management test completed
+      ✔ Should test price functions (10836ms)
+    5. Contract Statistics Test
+--- Contract Statistics Test ---
+Current contract count: 4
+Total Contracts: 4
+Triggered Contracts: 0
+Statistics test completed
+      ✔ Should retrieve contract statistics (289ms)
+    6. Error Handling Test
+--- Error Handling Test ---
+✓ Invalid contract error handled correctly
+Error handling test completed
+      ✔ Should handle invalid operations gracefully (3516ms)
+
+============================================================
+TESTNET INTEGRATION TEST SUMMARY
+============================================================
+GoHedge Contract: 0x93A8dB48b19E3f4Ec4DB864aBEf054560a3E7257
+Mock USDC Token: 0x10268c766Ade3610Ff8F6ceF42Ec90B5AaF6c311
+Network: Avalanche Fuji Testnet
+View on Snowtrace: https://testnet.snowtrace.io/address/0x93A8dB48b19E3f4Ec4DB864aBEf054560a3E7257
+Contract AVAX Balance: 0.04 AVAX
+Final Contract Count: 4
+
+============================================================
+TESTNET INTEGRATION TESTS COMPLETED
+============================================================
+Basic contract verification: PASSED
+AVAX contract creation: PASSED
+Contract retrieval: PASSED
+Price management: PASSED
+Statistics retrieval: PASSED
+Error handling: PASSED
+
+GoHedge Protocol: TESTNET VALIDATION SUCCESSFUL
+============================================================
+
+
+  6 passing (25s)
+
+····················································································································
+|  Solidity and Network Configuration                                                                              │
+·······························|·················|················|·················|·······························
+|  Solidity: 0.8.19            ·  Optim: true    ·  Runs: 200     ·  viaIR: true    ·    Block: 15,000,000 gas     │
+·······························|·················|················|·················|·······························
+|  Methods                                                                                                         │
+·······························|·················|················|·················|··············|················
+|  Contracts / Methods         ·  Min            ·  Max           ·  Avg            ·  # calls     ·  usd (avg)    │
+·······························|·················|················|·················|··············|················
+|  DummyUpgradeUSDC            ·                                                                                   │
+·······························|·················|················|·················|··············|················
+|      purchaseInsurance       ·              -  ·             -  ·         32,208  ·           1  ·            -  │
+·······························|·················|················|·················|··············|················
+|      setTestPrice            ·              -  ·             -  ·         29,121  ·           5  ·            -  │
+·······························|·················|················|·················|··············|················
+|  DummyUpgradeUSDC_Whitelist  ·                                                                                   │
+·······························|·················|················|·················|··············|················
+|      createContract          ·              -  ·             -  ·        243,716  ·           2  ·            -  │
+·······························|·················|················|·················|··············|················
+|  Key                                                                                                             │
+····················································································································
+|  ◯  Execution gas for this method does not include intrinsic gas overhead                                        │
+····················································································································
+|  △  Cost was non-zero but below the precision setting for the currency display (see options)                     │
+····················································································································
+|  Toolchain:  hardhat                                                                                             │
+····················································································································
+

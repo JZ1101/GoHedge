@@ -1,10 +1,10 @@
 {
   "network": "fuji",
-  "contractAddress": "0x5B9a0f3Eebe4b7B679aFD2e8E5A1794958c4E915",
-  "usdcTokenAddress": "0x74e97F082aa28086c3839707416F8199Ca0Cd846",
+  "contractAddress": "0x93A8dB48b19E3f4Ec4DB864aBEf054560a3E7257",
+  "usdcTokenAddress": "0x10268c766Ade3610Ff8F6ceF42Ec90B5AaF6c311",
   "deployer": "0x12Ca88343378FB2Ea5bD84b928728a80720e73BC",
-  "timestamp": "2025-06-29T16:00:17.035Z",
-  "blockNumber": 42698322,
+  "timestamp": "2025-06-29T21:31:27.775Z",
+  "blockNumber": 42713764,
   "contractType": "GoHedgePreProduction",
   "features": [
     "USDC Support",
