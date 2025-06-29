@@ -1,0 +1,23 @@
+{
+  "network": "fuji",
+  "contractAddress": "0x5B9a0f3Eebe4b7B679aFD2e8E5A1794958c4E915",
+  "usdcTokenAddress": "0x74e97F082aa28086c3839707416F8199Ca0Cd846",
+  "deployer": "0x12Ca88343378FB2Ea5bD84b928728a80720e73BC",
+  "timestamp": "2025-06-29T16:00:17.035Z",
+  "blockNumber": 42698322,
+  "contractType": "GoHedgePreProduction",
+  "features": [
+    "USDC Support",
+    "Time-based Automation",
+    "Dual Reserve System",
+    "CCIP Cross-Chain Whitelist",
+    "Test Mode Enabled"
+  ],
+  "testPrices": {
+    "AVAX": "25.0",
+    "BTC": "30000.0",
+    "ETH": "2000.0",
+    "USDC": "1.0"
+  },
+  "deployerUSDCBalance": "10000.0"
+}
