@@ -409,7 +409,35 @@
     "yocto-queue": "^0.1.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "hardhat test",
+    "test:all": "node scripts/RunAllTests.js",
+    "test:verbose": "node scripts/RunAllTests.js --verbose",
+    "test:parallel": "node scripts/RunAllTests.js --parallel",
+    "test:list": "node scripts/RunAllTests.js --list",
+    "test:help": "node scripts/RunAllTests.js --help",
+    
+    "test:core": "node scripts/RunAllTests.js --filter DummyUpgrade.test.js",
+    "test:security": "node scripts/RunAllTests.js --filter Security",
+    "test:performance": "node scripts/RunAllTests.js --filter Performance", 
+    "test:gas": "node scripts/RunAllTests.js --filter GasAndPerformance",
+    "test:whitelist": "node scripts/RunAllTests.js --filter Whitelist",
+    "test:usdc": "node scripts/RunAllTests.js --filter USDC",
+    "test:integration": "node scripts/RunAllTests.js --filter GoHedgePreProduction",
+    "test:testnet": "node scripts/RunAllTests.js --filter testnet",
+    
+    "test:single": "node scripts/RunAllTests.js --single",
+    "test:dummy": "hardhat test test/DummyUpgrade.test.js",
+    "test:production": "hardhat test test/GoHedgePreProduction.dummy.test.js",
+    "test:production-testnet": "hardhat test test/GoHedgePreProduction.testnet.test.js --network fuji",
+    
+    "compile": "hardhat compile",
+    "clean": "hardhat clean",
+    "deploy": "hardhat run scripts/deployGoHedgePreProduction.js",
+    "deploy:fuji": "hardhat run scripts/deployGoHedgePreProduction.js --network fuji",
+    
+    "get-abi": "node scripts/get-abi-gohedge.js",
+    "coverage": "hardhat coverage",
+    "size": "hardhat size-contracts"
   },
   "keywords": [],
   "author": "",
