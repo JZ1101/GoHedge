@@ -135,7 +135,7 @@ npm run dev
 
 ```bash
 cd web3
-npm test
+npm run test:all
 ```
 
 **Test Coverage:**
@@ -143,6 +143,12 @@ npm test
 - Gas optimization tests
 - Security vulnerability tests
 - Cross-chain functionality tests
+
+**Additional Test Commands:**
+- `npm run test:core` - Core functionality tests
+- `npm run test:security` - Security tests
+- `npm run test:performance` - Performance tests
+- `npm run test:gas` - Gas optimization tests
 
 ## Key Features
 
