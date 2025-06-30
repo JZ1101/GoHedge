@@ -39,6 +39,8 @@ GoHedge provides trigger-based insurance for L1 tokens. Users buy protection aga
 - **Time-based Automation:** Hourly automated checks and payouts
 - **CCIP:** Cross-chain whitelist synchronization
 
+*For detailed Chainlink integration examples and implementation details, see [Technical Documentation](web3/TECHNICAL_DOCUMENTATION.md#example-chainlink-integration)*
+
 ### Smart Contract Features
 - USDC and AVAX reserve support
 - Seller-controlled whitelists
