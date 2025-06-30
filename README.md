@@ -174,4 +174,4 @@ See [web3/TECHNICAL_DOCUMENTATION.md](web3/TECHNICAL_DOCUMENTATION.md) for detai
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+GPL License - see [LICENSE](LICENSE) file for details.
