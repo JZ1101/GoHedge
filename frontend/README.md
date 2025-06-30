@@ -1,27 +1,5 @@
 
-# GoHedge - Decentralized Insurance Platform
-
-GoHedge is a decentralized finance (DeFi) platform that enables users to create and trade insurance contracts for various assets including cryptocurrencies, forex pairs, and commodities.
-
-## What is GoHedge?
-
-GoHedge provides a marketplace where users can:
-- **Buy Insurance**: Protect your investments against price volatility
-- **Sell Insurance**: Create insurance contracts and earn fees from premiums
-- **Trade Contracts**: Access a liquid marketplace for insurance products
-
-The platform supports multiple asset classes:
-- **Cryptocurrencies**: AVAX, BTC, ETH, SOL, LINK
-- **Forex Pairs**: EUR/USD, JPY/USD  
-- **Commodities**: Gold (XAU/USD)
-
-## Features
-
-- **Real-time Price Data**: Live market data integration for accurate pricing
-- **Interactive Charts**: Detailed price charts with 24-hour historical data
-- **Portfolio Management**: Track your insurance positions and performance
-- **Web3 Integration**: Connect your wallet to interact with smart contracts
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
+# GoHedge - Frontend
 
 ## Technology Stack
 
@@ -91,13 +69,6 @@ npm run build
 ```
 
 The built files will be in the `dist/` directory, ready for deployment to any static hosting service.
-
-## Contributing
-
-1. Create a feature branch from main
-2. Make your changes
-3. Test thoroughly
-4. Submit a pull request with a clear description
 
 ## License
 
