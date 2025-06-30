@@ -3,6 +3,9 @@
 **Live Deployment:** [Avalanche Fuji Testnet](https://testnet.snowtrace.io/address/0x93A8dB48b19E3f4Ec4DB864aBEf054560a3E7257)  
 **Contract Address:** `0x93A8dB48b19E3f4Ec4DB864aBEf054560a3E7257`
 
+**Upkeep address:** [Chainlink Automation](https://automation.chain.link/fuji/3517839470200857376614867633919432353455215496638757101451424364126993591560)  
+**Contract Address:** `0x6111AE96A28d77dDCAe6FBcA0b9675adB27F4882`
+
 ## Problem
 
 High-yield tokens lack hedging tools. This creates low investor confidence and limited volumes for Layer 1 projects.
