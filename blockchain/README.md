@@ -1,5 +1,6 @@
-# CA: 0xc62C15AD56f54757bb074e0779aE85e54FD67861
-# Insurance Contract Requirements
+**Legacy Deployment:** [Avalanche Fuji Testnet](https://testnet.snowtrace.io/address/0xc62C15AD56f54757bb074e0779aE85e54FD67861)
+**Contract Address:** `0xc62C15AD56f54757bb074e0779aE85e54FD67861`
+# Dummy version of GoHedge Insurance Contract
 # V1 Core Features
 ### Contract Creation:
 The seller creates the insurance contract
